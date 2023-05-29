@@ -20,60 +20,91 @@ type jobDB struct {
 	AMQPJob      []byte      `db:"amqp_job"`
 	CreatedAt    time.Time   `db:"created_at"`
 	UpdatedAt    time.Time   `db:"updated_at"`
-	ErrorMessage null.String `db:"error_message"`
 	NextRun      null.Time   `db:"next_run"`
 	LockedAt     null.Time   `db:"locked_at"`
 	LockedBy     null.String `db:"locked_by"`
 }
 
 func toJobDB(j *model.Job) (*jobDB, error) {
-	httpJob, err := json.Marshal(j.HTTPJob)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal http job")
-	}
 
-	amqpJob, err := json.Marshal(j.AMQPJob)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal amqp job")
-	}
-
-	return &jobDB{
+	dbJ := &jobDB{
 		ID:           j.ID,
 		Type:         string(j.Type),
 		Status:       string(j.Status),
 		ExecuteAt:    j.ExecuteAt,
 		CronSchedule: j.CronSchedule,
-		HTTPJob:      httpJob,
-		AMQPJob:      amqpJob,
 		CreatedAt:    j.CreatedAt,
 		UpdatedAt:    j.UpdatedAt,
-		ErrorMessage: j.ErrorMessage,
 		NextRun:      j.NextRun,
-	}, nil
+	}
+
+	if j.HTTPJob != nil {
+		httpJob, err := json.Marshal(j.HTTPJob)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to marshal http job")
+		}
+		dbJ.HTTPJob = httpJob
+	}
+
+	if j.AMQPJob != nil {
+		amqpJob, err := json.Marshal(j.AMQPJob)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to marshal amqp job")
+		}
+		dbJ.AMQPJob = amqpJob
+	}
+
+	return dbJ, nil
 }
 
 func (j *jobDB) ToJob() (*model.Job, error) {
-	var httpJob model.HTTPJob
-	if err := json.Unmarshal(j.HTTPJob, &httpJob); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal http job")
-	}
-
-	var amqpJob model.AMQPJob
-	if err := json.Unmarshal(j.AMQPJob, &amqpJob); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal amqp job")
-	}
-
-	return &model.Job{
+	job := &model.Job{
 		ID:           j.ID,
 		Type:         model.JobType(j.Type),
 		Status:       model.JobStatus(j.Status),
 		ExecuteAt:    j.ExecuteAt,
 		CronSchedule: j.CronSchedule,
-		HTTPJob:      &httpJob,
-		AMQPJob:      &amqpJob,
 		CreatedAt:    j.CreatedAt,
 		UpdatedAt:    j.UpdatedAt,
-		ErrorMessage: j.ErrorMessage,
 		NextRun:      j.NextRun,
-	}, nil
+	}
+
+	if err := unmarshalNullableJSON(j.HTTPJob, &job.HTTPJob); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal http job")
+	}
+
+	if err := unmarshalNullableJSON(j.AMQPJob, &job.AMQPJob); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal amqp job")
+	}
+
+	return job, nil
+}
+
+func unmarshalNullableJSON(data []byte, v interface{}) error {
+	if data == nil {
+		return nil
+	}
+	return json.Unmarshal(data, v)
+}
+
+type executionDB struct {
+	ID           int         `db:"id"`
+	JobID        uuid.UUID   `db:"job_id"`
+	Status       string      `db:"status"`
+	StartTime    time.Time   `db:"start_time"`
+	EndTime      time.Time   `db:"end_time"`
+	ErrorMessage null.String `db:"error_message"`
+	CreatedAt    time.Time   `db:"created_at"`
+}
+
+func (e *executionDB) ToModel() *model.JobExecution {
+
+	return &model.JobExecution{
+		ID:           e.ID,
+		JobID:        e.JobID,
+		Success:      e.Status == string(model.JobExecutionStatusSuccessful),
+		StartTime:    e.StartTime,
+		EndTime:      e.EndTime,
+		ErrorMessage: e.ErrorMessage,
+	}
 }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"expvar"
 	"fmt"
+	"github.com/GLCharge/distributed-scheduler/foundation/database/dbmigrate"
 	"net/http"
 	"os"
 	"os/signal"
@@ -12,10 +13,10 @@ import (
 	"time"
 
 	"github.com/GLCharge/distributed-scheduler/foundation/database"
-	"github.com/GLCharge/distributed-scheduler/foundation/database/dbmigrate"
 	"github.com/GLCharge/distributed-scheduler/foundation/logger"
 	"github.com/GLCharge/distributed-scheduler/handlers"
 	"github.com/GLCharge/distributed-scheduler/scheduler"
+	"github.com/GLCharge/distributed-scheduler/service/job"
 	"github.com/GLCharge/distributed-scheduler/store/postgres"
 	"github.com/ardanlabs/conf/v3"
 	"go.uber.org/zap"
@@ -50,7 +51,7 @@ func run(log *zap.SugaredLogger) error {
 			WriteTimeout    time.Duration `conf:"default:10s"`
 			IdleTimeout     time.Duration `conf:"default:120s"`
 			ShutdownTimeout time.Duration `conf:"default:20s"`
-			APIHost         string        `conf:"default:0.0.0.0:3000"`
+			APIHost         string        `conf:"default:0.0.0.0:8000"`
 		}
 		DB struct {
 			User         string `conf:"default:scheduler"`
@@ -61,8 +62,11 @@ func run(log *zap.SugaredLogger) error {
 			MaxOpenConns int    `conf:"default:2"`
 			DisableTLS   bool   `conf:"default:true"`
 		}
-		Instance struct {
-			ID string `conf:"default:1"`
+		Scheduler struct {
+			ID                string        `conf:"default:instance1"`
+			Interval          time.Duration `conf:"default:10s"`
+			MaxConcurrentJobs int           `conf:"default:100"`
+			MaxJobLockTime    time.Duration `conf:"default:5m"`
 		}
 	}{
 		Version: conf.Version{
@@ -131,9 +135,10 @@ func run(log *zap.SugaredLogger) error {
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 
 	apiMux := handlers.APIMux(handlers.APIMuxConfig{
-		Shutdown: shutdown,
-		Log:      log,
-		DB:       db,
+		Shutdown:           shutdown,
+		Log:                log,
+		MaxJobLockDuration: cfg.Scheduler.MaxJobLockTime,
+		DB:                 db,
 	})
 
 	api := http.Server{
@@ -157,12 +162,19 @@ func run(log *zap.SugaredLogger) error {
 
 	log.Infow("startup", "status", "initializing Scheduler support")
 
-	store := postgres.New(db, log)
+	store := postgres.New(db, log, cfg.Scheduler.MaxJobLockTime)
 
-	sch := scheduler.New(store, log, cfg.Instance.ID)
+	jobService := job.NewService(store, log)
 
-	// start the scheduler
-	sch.Run()
+	sch := scheduler.New(scheduler.Config{
+		JobService:        jobService,
+		Log:               log,
+		InstanceId:        cfg.Scheduler.ID,
+		Interval:          cfg.Scheduler.Interval,
+		MaxConcurrentJobs: cfg.Scheduler.MaxConcurrentJobs,
+	})
+
+	sch.Start()
 
 	// -------------------------------------------------------------------------
 	// Shutdown
@@ -179,7 +191,7 @@ func run(log *zap.SugaredLogger) error {
 		defer cancel()
 
 		// stop the scheduler
-		sch.Stop()
+		sch.Stop(ctx)
 
 		if err := api.Shutdown(ctx); err != nil {
 			api.Close()

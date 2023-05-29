@@ -4,6 +4,7 @@ import "errors"
 
 var (
 	ErrInvalidJobType       = errors.New("job type must be either HTTP or AMQP")
+	ErrInvalidJobID         = errors.New("job ID must be a valid UUID")
 	ErrInvalidJobStatus     = errors.New("job status must be either PENDING, SCHEDULED, SUCCESSFUL, or FAILED")
 	ErrInvalidJobFields     = errors.New("job cannot have both HTTP and AMQP fields defined")
 	ErrInvalidJobSchedule   = errors.New("job must have only one of execute_at and cron_schedule defined")
@@ -33,7 +34,7 @@ func (e *CustomError) Error() string {
 
 func ToCustomJobError(err error) *CustomError {
 	switch err {
-	case ErrInvalidJobType, ErrInvalidJobStatus, ErrInvalidJobFields, ErrInvalidJobSchedule, ErrInvalidCronSchedule, ErrInvalidExecuteAt,
+	case ErrInvalidJobType, ErrInvalidJobID, ErrInvalidJobStatus, ErrInvalidJobFields, ErrInvalidJobSchedule, ErrInvalidCronSchedule, ErrInvalidExecuteAt,
 		ErrEmptyHTTPJobURL, ErrHTTPJobNotDefined, ErrEmptyHTTPJobMethod, ErrAMQPJobNotDefined, ErrEmptyExchange, ErrEmptyRoutingKey,
 		ErrInvalidAuthType, ErrEmptyUsername, ErrEmptyPassword, ErrEmptyBearerToken, ErrAuthMethodNotDefined:
 		return &CustomError{err, 400}

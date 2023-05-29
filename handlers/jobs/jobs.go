@@ -1,6 +1,7 @@
 package jobs
 
 import (
+	"github.com/google/uuid"
 	"net/http"
 	"strconv"
 
@@ -22,15 +23,15 @@ type Jobs struct {
 func (j *Jobs) CreateJob() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		create := model.JobCreate{}
-		if err := c.BindJSON(&create); err != nil {
+		create := &model.JobCreate{}
+		if err := c.BindJSON(create); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": err.Error(),
 			})
 			return
 		}
 
-		err := j.service.CreateJob(c.Request.Context(), &create)
+		job, err := j.service.CreateJob(c.Request.Context(), create)
 		if err != nil {
 			jobErr := model.ToCustomJobError(err)
 
@@ -40,10 +41,37 @@ func (j *Jobs) CreateJob() gin.HandlerFunc {
 			return
 		}
 
-		c.Status(http.StatusCreated)
+		c.JSON(http.StatusCreated, job)
 
 	}
+}
 
+func (j *Jobs) UpdateJob() gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		id := c.Param("id")
+
+		update := model.JobUpdate{}
+		if err := c.BindJSON(&update); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		job, err := j.service.UpdateJob(c.Request.Context(), id, update)
+		if err != nil {
+			jobErr := model.ToCustomJobError(err)
+
+			c.JSON(jobErr.Code, gin.H{
+				"error": jobErr.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, job)
+
+	}
 }
 
 func (j *Jobs) GetJob() gin.HandlerFunc {
@@ -105,6 +133,45 @@ func (j *Jobs) ListJobs() gin.HandlerFunc {
 	}
 }
 
+func (j *Jobs) GetJobExecutions() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+
+		id := ctx.Param("id")
+
+		jobID, err := uuid.Parse(id)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		failedOnlyStr := ctx.Query("failedOnly")
+		failedOnly, err := strconv.ParseBool(failedOnlyStr)
+		if err != nil {
+			failedOnly = false
+		}
+
+		limit, offset := LimitAndOffset(ctx)
+
+		executions, err := j.service.GetJobExecutions(ctx.Request.Context(), jobID, failedOnly, limit, offset)
+		if err != nil {
+			jobErr := model.ToCustomJobError(err)
+
+			ctx.JSON(jobErr.Code, gin.H{
+				"error": jobErr.Error(),
+			})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, map[string]interface {
+		}{
+			"executions": executions,
+		})
+
+	}
+}
+
 func LimitAndOffset(c *gin.Context) (uint64, uint64) {
 	limitStr := c.Query("limit")
 	offsetStr := c.Query("offset")
@@ -113,7 +180,7 @@ func LimitAndOffset(c *gin.Context) (uint64, uint64) {
 	var limit, offset uint64
 	var err error
 	limit, err = strconv.ParseUint(limitStr, 10, 32)
-	if err != nil {
+	if err != nil || limit == 0 {
 		limit = 10
 	}
 

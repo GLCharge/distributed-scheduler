@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"gopkg.in/guregu/null.v4"
 	"time"
 
 	"go.uber.org/zap"
@@ -14,19 +15,81 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-const maxJobLockDuration = 5 * time.Minute
-
 type pgStore struct {
-	db  *sqlx.DB
-	log *zap.SugaredLogger
+	db                 *sqlx.DB
+	log                *zap.SugaredLogger
+	maxJobLockDuration time.Duration
 }
 
 // New creates a new PostgreSQL store.
-func New(db *sqlx.DB, log *zap.SugaredLogger) store.Storer {
+func New(db *sqlx.DB, log *zap.SugaredLogger, maxJobLockDuration time.Duration) store.Storer {
 	return &pgStore{
-		db:  db,
-		log: log,
+		db:                 db,
+		log:                log,
+		maxJobLockDuration: maxJobLockDuration,
 	}
+}
+
+func (s *pgStore) UpdateJob(ctx context.Context, job *model.Job) error {
+
+	dbJob, err := toJobDB(job)
+	if err != nil {
+		return fmt.Errorf("failed to convert job to database job: %w", err)
+	}
+
+	query := `
+		UPDATE
+			jobs
+		SET
+			 type = :type,
+			 execute_at = :execute_at,
+			 cron_schedule = :cron_schedule,
+			 http_job = :http_job,
+			 amqp_job = :amqp_job,
+			 updated_at = :updated_at,
+			 next_run = :next_run
+		WHERE id = :id
+		`
+
+	_, err = s.db.NamedExecContext(ctx, query, dbJob)
+	if err != nil {
+		return fmt.Errorf("failed to update job in database: %w", err)
+	}
+
+	return nil
+}
+
+func (s *pgStore) GetJobExecutions(ctx context.Context, jobID uuid.UUID, failedOnly bool, limit, offset uint64) ([]*model.JobExecution, error) {
+
+	extraFilter := ""
+	if failedOnly {
+		extraFilter = " AND status = 'FAILED'"
+	}
+
+	query := `
+		SELECT
+			*
+		FROM
+			job_executions
+		WHERE
+			job_id = $1` + extraFilter +
+		` ORDER BY start_time DESC
+		LIMIT $2 OFFSET $3`
+
+	var dbExecutions []*executionDB
+	err := s.db.SelectContext(ctx, &dbExecutions, query, jobID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get job executions from database: %w", err)
+	}
+
+	// convert the JobExecutionDB struct to a JobExecution struct
+	var executions []*model.JobExecution
+	for _, dbExecution := range dbExecutions {
+		executions = append(executions, dbExecution.ToModel())
+	}
+
+	return executions, nil
+
 }
 
 func (s *pgStore) CreateJob(ctx context.Context, job *model.Job) error {
@@ -48,7 +111,6 @@ func (s *pgStore) CreateJob(ctx context.Context, job *model.Job) error {
 		 amqp_job,
 		 created_at,
 		 updated_at,
-		 error_message,
 		 next_run,
 		 locked_at,
 		 locked_by
@@ -62,7 +124,6 @@ func (s *pgStore) CreateJob(ctx context.Context, job *model.Job) error {
 		 :amqp_job,
 		 :created_at,
 		 :updated_at,
-		 :error_message,
 		 :next_run,
 		 :locked_at,
 		 :locked_by
@@ -150,10 +211,10 @@ func (s *pgStore) GetJobsToRun(ctx context.Context, t time.Time, instanceID stri
 	rows, err := tx.QueryContext(ctx, `
 	   SELECT *
 	   FROM jobs
-	   WHERE next_run <= $1 AND (locked_at IS NULL OR locked_at < $2)
+	   WHERE next_run <= $1 AND (locked_at IS NULL OR locked_at < $2) AND status = 'RUNNING'
 	   LIMIT 10
 	   FOR UPDATE SKIP LOCKED
-	`, t, t.Add(-maxJobLockDuration))
+	`, t, t.Add(-s.maxJobLockDuration))
 	if err != nil {
 		return nil, fmt.Errorf("failed to query jobs: %w", err)
 	}
@@ -191,17 +252,33 @@ func (s *pgStore) GetJobsToRun(ctx context.Context, t time.Time, instanceID stri
 	return jobs, nil
 }
 
-func (s *pgStore) UnlockJob(ctx context.Context, jobID uuid.UUID) error {
+func (s *pgStore) FinishJob(ctx context.Context, jobID uuid.UUID, nextRun null.Time) error {
 
-	// unlock job in database
+	// finish job in database
 	query := `
-		UPDATE jobs SET locked_at = NULL, locked_by = NULL WHERE id = $1
+		UPDATE jobs SET 
+		        next_run = $1, 
+		        locked_at = null, locked_by = null, updated_at = now() 
+		WHERE id = $2
 	`
-	_, err := s.db.ExecContext(ctx, query, jobID)
+	_, err := s.db.ExecContext(ctx, query, nextRun, jobID)
 	if err != nil {
-		return fmt.Errorf("failed to unlock job in database: %w", err)
+		return fmt.Errorf("failed to finish job in database: %w", err)
 	}
 
 	return nil
+}
+func (s *pgStore) CreateJobExecution(ctx context.Context, jobID uuid.UUID, startTime, stopTime time.Time, status model.JobExecutionStatus, errorMessage null.String) error {
 
+	// create job execution in database
+	query := `
+		INSERT INTO job_executions (job_id, start_time, end_time, status, error_message, created_at) 
+		VALUES ($1, $2, $3, $4, $5, now())
+	`
+	_, err := s.db.ExecContext(ctx, query, jobID, startTime, stopTime, status, errorMessage)
+	if err != nil {
+		return fmt.Errorf("failed to create job execution in database: %w", err)
+	}
+
+	return nil
 }
