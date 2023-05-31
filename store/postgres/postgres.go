@@ -111,9 +111,7 @@ func (s *pgStore) CreateJob(ctx context.Context, job *model.Job) error {
 		 amqp_job,
 		 created_at,
 		 updated_at,
-		 next_run,
-		 locked_at,
-		 locked_by
+		 next_run
 	 ) VALUES (
 		 :id,
 		 :type,
@@ -124,9 +122,7 @@ func (s *pgStore) CreateJob(ctx context.Context, job *model.Job) error {
 		 :amqp_job,
 		 :created_at,
 		 :updated_at,
-		 :next_run,
-		 :locked_at,
-		 :locked_by
+		 :next_run
 	 )
  `
 
@@ -149,7 +145,7 @@ func (s *pgStore) GetJob(ctx context.Context, id string) (*model.Job, error) {
 	err := s.db.GetContext(ctx, &dbJob, query, id)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("job not found: %w", err)
+			return nil, model.ErrJobNotFound
 		}
 		return nil, fmt.Errorf("failed to get job from database: %w", err)
 	}
@@ -179,7 +175,7 @@ func (s *pgStore) DeleteJob(ctx context.Context, id string) error {
 func (s *pgStore) ListJobs(ctx context.Context, limit, offset uint64) ([]*model.Job, error) {
 	// get all jobs from database
 	query := `
-        SELECT * FROM jobs LIMIT $1 OFFSET $2
+        SELECT * FROM jobs ORDER BY created_at DESC LIMIT $1 OFFSET $2 
     `
 	var dbJobs []*jobDB
 	err := s.db.SelectContext(ctx, &dbJobs, query, limit, offset)
@@ -200,7 +196,7 @@ func (s *pgStore) ListJobs(ctx context.Context, limit, offset uint64) ([]*model.
 	return jobs, nil
 }
 
-func (s *pgStore) GetJobsToRun(ctx context.Context, t time.Time, instanceID string) ([]*model.Job, error) {
+func (s *pgStore) GetJobsToRun(ctx context.Context, at time.Time, lockedUntil time.Time, instanceID string, limit uint) ([]*model.Job, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
@@ -211,10 +207,10 @@ func (s *pgStore) GetJobsToRun(ctx context.Context, t time.Time, instanceID stri
 	rows, err := tx.QueryContext(ctx, `
 	   SELECT *
 	   FROM jobs
-	   WHERE next_run <= $1 AND (locked_at IS NULL OR locked_at < $2) AND status = 'RUNNING'
-	   LIMIT 10
+	   WHERE next_run <= $1 AND (locked_until IS NULL OR locked_until < $2) AND status = 'RUNNING'
+	   LIMIT $3
 	   FOR UPDATE SKIP LOCKED
-	`, t, t.Add(-s.maxJobLockDuration))
+	`, at, at, limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query jobs: %w", err)
 	}
@@ -238,9 +234,9 @@ func (s *pgStore) GetJobsToRun(ctx context.Context, t time.Time, instanceID stri
 		// Mark the job as locked by this instance
 		if _, err := tx.ExecContext(ctx, `
 	       UPDATE jobs
-	       SET locked_at = $1, locked_by = $2
+	       SET locked_until = $1, locked_by = $2
 	       WHERE id = $3
-	   `, t, instanceID, job.ID); err != nil {
+	   `, lockedUntil, instanceID, job.ID); err != nil {
 			return nil, fmt.Errorf("failed to lock job: %w", err)
 		}
 	}
@@ -258,7 +254,7 @@ func (s *pgStore) FinishJob(ctx context.Context, jobID uuid.UUID, nextRun null.T
 	query := `
 		UPDATE jobs SET 
 		        next_run = $1, 
-		        locked_at = null, locked_by = null, updated_at = now() 
+		        locked_until = null, locked_by = null, updated_at = now() 
 		WHERE id = $2
 	`
 	_, err := s.db.ExecContext(ctx, query, nextRun, jobID)

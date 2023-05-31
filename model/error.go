@@ -21,6 +21,8 @@ var (
 	ErrEmptyPassword        = errors.New("password must be defined for basic auth")
 	ErrEmptyBearerToken     = errors.New("bearer token must be defined for bearer auth")
 	ErrAuthMethodNotDefined = errors.New("auth method must be defined")
+	ErrJobNotFound          = errors.New("job not found")
+	ErrInvalidResponseCode  = errors.New("invalid response code")
 )
 
 type CustomError struct {
@@ -36,7 +38,8 @@ func ToCustomJobError(err error) *CustomError {
 	switch err {
 	case ErrInvalidJobType, ErrInvalidJobID, ErrInvalidJobStatus, ErrInvalidJobFields, ErrInvalidJobSchedule, ErrInvalidCronSchedule, ErrInvalidExecuteAt,
 		ErrEmptyHTTPJobURL, ErrHTTPJobNotDefined, ErrEmptyHTTPJobMethod, ErrAMQPJobNotDefined, ErrEmptyExchange, ErrEmptyRoutingKey,
-		ErrInvalidAuthType, ErrEmptyUsername, ErrEmptyPassword, ErrEmptyBearerToken, ErrAuthMethodNotDefined:
+		ErrInvalidAuthType, ErrEmptyUsername, ErrEmptyPassword, ErrEmptyBearerToken, ErrAuthMethodNotDefined,
+		ErrJobNotFound:
 		return &CustomError{err, 400}
 
 	default:

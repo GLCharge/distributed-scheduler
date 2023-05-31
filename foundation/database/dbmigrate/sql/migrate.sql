@@ -27,7 +27,7 @@ CREATE TABLE jobs (
     amqp_job JSONB,
 
     next_run TIMESTAMPTZ,
-    locked_at TIMESTAMPTZ,
+    locked_until TIMESTAMPTZ,
     locked_by VARCHAR(255),
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -50,7 +50,7 @@ ALTER TABLE jobs ADD CONSTRAINT
 
 CREATE INDEX next_run_index ON jobs (next_run);
 
-CREATE INDEX locked_at_index ON jobs (locked_at);
+CREATE INDEX locked_at_index ON jobs (locked_until);
 
 CREATE TABLE job_executions (
     id SERIAL PRIMARY KEY,

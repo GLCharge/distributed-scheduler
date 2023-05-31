@@ -21,111 +21,111 @@ type Jobs struct {
 }
 
 func (j *Jobs) CreateJob() gin.HandlerFunc {
-	return func(c *gin.Context) {
+	return func(ctx *gin.Context) {
 
 		create := &model.JobCreate{}
-		if err := c.BindJSON(create); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
+		if err := ctx.BindJSON(create); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": err.Error(),
 			})
 			return
 		}
 
-		job, err := j.service.CreateJob(c.Request.Context(), create)
+		job, err := j.service.CreateJob(ctx.Request.Context(), create)
 		if err != nil {
 			jobErr := model.ToCustomJobError(err)
 
-			c.JSON(jobErr.Code, gin.H{
+			ctx.JSON(jobErr.Code, gin.H{
 				"error": jobErr.Error(),
 			})
 			return
 		}
 
-		c.JSON(http.StatusCreated, job)
+		ctx.JSON(http.StatusCreated, job)
 
 	}
 }
 
 func (j *Jobs) UpdateJob() gin.HandlerFunc {
-	return func(c *gin.Context) {
+	return func(ctx *gin.Context) {
 
-		id := c.Param("id")
+		id := ctx.Param("id")
 
 		update := model.JobUpdate{}
-		if err := c.BindJSON(&update); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
+		if err := ctx.BindJSON(&update); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": err.Error(),
 			})
 			return
 		}
 
-		job, err := j.service.UpdateJob(c.Request.Context(), id, update)
+		job, err := j.service.UpdateJob(ctx.Request.Context(), id, update)
 		if err != nil {
 			jobErr := model.ToCustomJobError(err)
 
-			c.JSON(jobErr.Code, gin.H{
+			ctx.JSON(jobErr.Code, gin.H{
 				"error": jobErr.Error(),
 			})
 			return
 		}
 
-		c.JSON(http.StatusOK, job)
+		ctx.JSON(http.StatusOK, job)
 
 	}
 }
 
 func (j *Jobs) GetJob() gin.HandlerFunc {
-	return func(c *gin.Context) {
+	return func(ctx *gin.Context) {
 
-		id := c.Param("id")
+		id := ctx.Param("id")
 
-		job, err := j.service.GetJob(c.Request.Context(), id)
+		job, err := j.service.GetJob(ctx.Request.Context(), id)
 		if err != nil {
 			jobErr := model.ToCustomJobError(err)
 
-			c.JSON(jobErr.Code, gin.H{
+			ctx.JSON(jobErr.Code, gin.H{
 				"error": jobErr.Error(),
 			})
 			return
 		}
 
-		c.JSON(http.StatusOK, job)
+		ctx.JSON(http.StatusOK, job)
 
 	}
 }
 
 func (j *Jobs) DeleteJob() gin.HandlerFunc {
-	return func(c *gin.Context) {
+	return func(ctx *gin.Context) {
 
-		id := c.Param("id")
+		id := ctx.Param("id")
 
-		if err := j.service.DeleteJob(c.Request.Context(), id); err != nil {
+		if err := j.service.DeleteJob(ctx.Request.Context(), id); err != nil {
 			jobErr := model.ToCustomJobError(err)
 
-			c.JSON(jobErr.Code, gin.H{
+			ctx.JSON(jobErr.Code, gin.H{
 				"error": jobErr.Error(),
 			})
 			return
 		}
 
-		c.Status(http.StatusNoContent)
+		ctx.Status(http.StatusNoContent)
 	}
 }
 
 func (j *Jobs) ListJobs() gin.HandlerFunc {
-	return func(c *gin.Context) {
+	return func(ctx *gin.Context) {
 
-		limit, offset := LimitAndOffset(c)
+		limit, offset := LimitAndOffset(ctx)
 
-		jobs, err := j.service.ListJobs(c.Request.Context(), limit, offset)
+		jobs, err := j.service.ListJobs(ctx.Request.Context(), limit, offset)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
+			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
 			return
 		}
 
-		c.JSON(http.StatusOK, map[string]interface {
+		ctx.JSON(http.StatusOK, map[string]interface {
 		}{
 			"jobs": jobs,
 		})
@@ -172,9 +172,9 @@ func (j *Jobs) GetJobExecutions() gin.HandlerFunc {
 	}
 }
 
-func LimitAndOffset(c *gin.Context) (uint64, uint64) {
-	limitStr := c.Query("limit")
-	offsetStr := c.Query("offset")
+func LimitAndOffset(ctx *gin.Context) (uint64, uint64) {
+	limitStr := ctx.Query("limit")
+	offsetStr := ctx.Query("offset")
 
 	// convert limit and offset to uint
 	var limit, offset uint64

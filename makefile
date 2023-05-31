@@ -19,6 +19,11 @@ dev-down:
 
 test:
 	@echo "Running tests..."
-	@go test -v ./...
+	@go test -v --race ./...
 
-.PHONY: build run dev-up dev-down
+
+db-migrate:
+	@echo "Running migrations..."
+	@go run cmd/tooling/main.go migrate --host=localhost:5436
+
+.PHONY: build run dev-up dev-down db-migrate test

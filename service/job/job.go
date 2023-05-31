@@ -51,7 +51,6 @@ func (s *Service) CreateJob(ctx context.Context, jobCreate *model.JobCreate) (*m
 
 // GetJob returns the job with the given ID.
 func (s *Service) GetJob(ctx context.Context, id string) (*model.Job, error) {
-	// Implement getting a specific job using the store
 
 	return s.store.GetJob(ctx, id)
 }
@@ -96,9 +95,9 @@ func (s *Service) ListJobs(ctx context.Context, limit, offset uint64) ([]*model.
 }
 
 // GetJobsToRun returns a list of jobs that should be run at the given time.
-func (s *Service) GetJobsToRun(ctx context.Context, t time.Time, instanceID string) ([]*model.Job, error) {
+func (s *Service) GetJobsToRun(ctx context.Context, at time.Time, lockedUntil time.Time, instanceID string, limit uint) ([]*model.Job, error) {
 
-	return s.store.GetJobsToRun(ctx, t, instanceID)
+	return s.store.GetJobsToRun(ctx, at, lockedUntil, instanceID, limit)
 }
 
 func (s *Service) FinishJobExecution(ctx context.Context, job *model.Job, startTime, stopTime time.Time, err error) error {
@@ -107,7 +106,6 @@ func (s *Service) FinishJobExecution(ctx context.Context, job *model.Job, startT
 	job.SetNextRunTime()
 
 	// finish the job in the store (update the next run time and clear lock)
-	// also unlock the job so that it can be run again by other instances
 	err2 := s.store.FinishJob(ctx, job.ID, job.NextRun)
 	if err2 != nil {
 		return err
@@ -129,8 +127,8 @@ func (s *Service) FinishJobExecution(ctx context.Context, job *model.Job, startT
 	return nil
 }
 
-func (s *Service) GetJobExecutions(ctx context.Context, id uuid.UUID, only bool, limit uint64, offset uint64) ([]*model.JobExecution, error) {
+func (s *Service) GetJobExecutions(ctx context.Context, id uuid.UUID, failedOnly bool, limit uint64, offset uint64) ([]*model.JobExecution, error) {
 
-	return s.store.GetJobExecutions(ctx, id, only, limit, offset)
+	return s.store.GetJobExecutions(ctx, id, failedOnly, limit, offset)
 
 }

@@ -61,7 +61,7 @@ func TestHTTPJobValidate(t *testing.T) {
 			job: HTTPJob{
 				URL:    "https://example.com",
 				Method: "GET",
-				Auth: AuthMethod{
+				Auth: Auth{
 					Type: AuthTypeNone,
 				},
 			},
@@ -72,7 +72,7 @@ func TestHTTPJobValidate(t *testing.T) {
 			job: HTTPJob{
 				URL:    "",
 				Method: "GET",
-				Auth: AuthMethod{
+				Auth: Auth{
 					Type: AuthTypeNone,
 				},
 			},
@@ -83,7 +83,7 @@ func TestHTTPJobValidate(t *testing.T) {
 			job: HTTPJob{
 				URL:    "https://example.com",
 				Method: "",
-				Auth: AuthMethod{
+				Auth: Auth{
 					Type: AuthTypeNone,
 				},
 			},
@@ -145,19 +145,19 @@ func TestAMQPJobValidate(t *testing.T) {
 func TestAuthValidate(t *testing.T) {
 	tests := []struct {
 		name string
-		auth AuthMethod
+		auth Auth
 		want error
 	}{
 		{
 			name: "valid auth: no auth",
-			auth: AuthMethod{
+			auth: Auth{
 				Type: AuthTypeNone,
 			},
 			want: nil,
 		},
 		{
 			name: "valid auth: basic auth",
-			auth: AuthMethod{
+			auth: Auth{
 				Type:     AuthTypeBasic,
 				Username: null.StringFrom("testuser"),
 				Password: null.StringFrom("testpassword"),
@@ -166,7 +166,7 @@ func TestAuthValidate(t *testing.T) {
 		},
 		{
 			name: "invalid auth: missing username",
-			auth: AuthMethod{
+			auth: Auth{
 				Type:     AuthTypeBasic,
 				Password: null.StringFrom("testpassword"),
 			},
@@ -174,7 +174,7 @@ func TestAuthValidate(t *testing.T) {
 		},
 		{
 			name: "invalid auth: missing password",
-			auth: AuthMethod{
+			auth: Auth{
 				Type:     AuthTypeBasic,
 				Username: null.StringFrom("testuser"),
 			},
@@ -182,14 +182,14 @@ func TestAuthValidate(t *testing.T) {
 		},
 		{
 			name: "invalid auth: unsupported auth type",
-			auth: AuthMethod{
+			auth: Auth{
 				Type: "unsupported_type",
 			},
 			want: ErrInvalidAuthType,
 		},
 		{
 			name: "valid auth: bearer token",
-			auth: AuthMethod{
+			auth: Auth{
 				Type:        AuthTypeBearer,
 				BearerToken: null.StringFrom("testtoken"),
 			},
@@ -197,7 +197,7 @@ func TestAuthValidate(t *testing.T) {
 		},
 		{
 			name: "invalid auth: missing bearer token",
-			auth: AuthMethod{
+			auth: Auth{
 				Type: AuthTypeBearer,
 			},
 			want: ErrEmptyBearerToken,
@@ -228,7 +228,7 @@ func TestJobValidate(t *testing.T) {
 				HTTPJob: &HTTPJob{
 					URL:    "https://example.com",
 					Method: "GET",
-					Auth: AuthMethod{
+					Auth: Auth{
 						Type: AuthTypeNone,
 					},
 				},
@@ -245,7 +245,7 @@ func TestJobValidate(t *testing.T) {
 				HTTPJob: &HTTPJob{
 					URL:    "https://example.com",
 					Method: "GET",
-					Auth: AuthMethod{
+					Auth: Auth{
 						Type: AuthTypeNone,
 					},
 				},
@@ -274,7 +274,7 @@ func TestJobValidate(t *testing.T) {
 				HTTPJob: &HTTPJob{
 					URL:    "https://example.com",
 					Method: "GET",
-					Auth: AuthMethod{
+					Auth: Auth{
 						Type: AuthTypeNone,
 					},
 				},
@@ -292,7 +292,7 @@ func TestJobValidate(t *testing.T) {
 				HTTPJob: &HTTPJob{
 					URL:    "https://example.com",
 					Method: "GET",
-					Auth: AuthMethod{
+					Auth: Auth{
 						Type: AuthTypeNone,
 					},
 				},
@@ -311,7 +311,7 @@ func TestJobValidate(t *testing.T) {
 				HTTPJob: &HTTPJob{
 					URL:    "https://example.com",
 					Method: "GET",
-					Auth: AuthMethod{
+					Auth: Auth{
 						Type: AuthTypeNone,
 					},
 				},

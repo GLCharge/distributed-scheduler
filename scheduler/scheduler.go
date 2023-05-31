@@ -2,18 +2,20 @@ package scheduler
 
 import (
 	"context"
+	"github.com/GLCharge/distributed-scheduler/executor"
 	"sync"
 	"time"
 
 	"github.com/GLCharge/distributed-scheduler/model"
-	"github.com/GLCharge/distributed-scheduler/service/job"
 	"go.uber.org/zap"
 )
 
 type Scheduler struct {
-	jobService *job.Service
-	ticker     *time.Ticker
-	log        *zap.SugaredLogger
+	jobService JobService
+
+	executorFactory *executor.Factory
+	ticker          *time.Ticker
+	log             *zap.SugaredLogger
 
 	// Add an instance ID to identify the scheduler
 	instanceId string
@@ -33,12 +35,21 @@ type Scheduler struct {
 
 	// Add a sync.Once to ensure the scheduler only starts once
 	startOnce sync.Once
+
+	// limit the number of concurrent jobs
+	maxConcurrentJobs int
+}
+
+type JobService interface {
+	GetJobsToRun(ctx context.Context, at time.Time, lockedUntil time.Time, instanceID string, limit uint) ([]*model.Job, error)
+	FinishJobExecution(ctx context.Context, job *model.Job, startTime, stopTime time.Time, err error) error
 }
 
 type Config struct {
-	JobService *job.Service
-	Log        *zap.SugaredLogger
-	InstanceId string
+	JobService      JobService
+	ExecutorFactory *executor.Factory
+	Log             *zap.SugaredLogger
+	InstanceId      string
 
 	Interval          time.Duration
 	MaxConcurrentJobs int
@@ -48,13 +59,15 @@ func New(cfg Config) *Scheduler {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	s := &Scheduler{
-		jobService:   cfg.JobService,
-		instanceId:   cfg.InstanceId,
-		log:          cfg.Log,
-		ticker:       time.NewTicker(cfg.Interval),
-		ctx:          ctx,
-		cancel:       cancel,
-		jobSemaphore: make(chan struct{}, cfg.MaxConcurrentJobs),
+		jobService:        cfg.JobService,
+		instanceId:        cfg.InstanceId,
+		log:               cfg.Log,
+		ticker:            time.NewTicker(cfg.Interval),
+		ctx:               ctx,
+		executorFactory:   cfg.ExecutorFactory,
+		cancel:            cancel,
+		jobSemaphore:      make(chan struct{}, cfg.MaxConcurrentJobs),
+		maxConcurrentJobs: cfg.MaxConcurrentJobs,
 	}
 
 	s.stopWg.Add(1)
@@ -129,8 +142,11 @@ func (s *Scheduler) runJobs() {
 	// Get the current time
 	now := time.Now()
 
+	ctx, cancel := context.WithTimeout(s.ctx, time.Second*10)
+	defer cancel()
+
 	// Get the jobs that should be run
-	jobs, err := s.jobService.GetJobsToRun(s.ctx, now, s.instanceId)
+	jobs, err := s.jobService.GetJobsToRun(ctx, now, now.Add(5*time.Second), s.instanceId, uint(s.maxConcurrentJobs))
 	if err != nil {
 		// Log the error and return
 		s.log.Error("Failed to get jobs to run", err)
@@ -156,10 +172,17 @@ func (s *Scheduler) executeJob(job *model.Job) {
 
 		s.log.Infow("Executing job", "jobID", job.ID)
 
+		// Create a new executor for the job with retry enabled
+		jobExecutor, err := s.executorFactory.NewExecutor(job, executor.WithRetry)
+		if err != nil {
+			s.log.Errorw("Failed to create job executor", "jobID", job.ID, "error", err)
+			return
+		}
+
 		startTime := time.Now()
 
 		// Execute the job
-		err := job.Execute(s.ctx)
+		err = job.Execute(s.ctx, jobExecutor)
 
 		stopTime := time.Now()
 

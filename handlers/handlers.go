@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"context"
+	"github.com/GLCharge/distributed-scheduler/foundation/database"
 	"net/http"
 	"os"
 	"time"
@@ -70,8 +72,8 @@ func healthCheck(cfg APIMuxConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		// Check the database connection
-		if err := cfg.DB.Ping(); err != nil {
-			cfg.Log.Errorw("database ping failed", "error", err)
+		if err := database.StatusCheck(context.Background(), cfg.DB); err != nil {
+			cfg.Log.Errorw("database status check failed", "error", err)
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"status": "database ping failed",
 			})

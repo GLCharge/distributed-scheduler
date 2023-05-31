@@ -5,7 +5,7 @@ import (
 	"errors"
 	"expvar"
 	"fmt"
-	"github.com/GLCharge/distributed-scheduler/foundation/database/dbmigrate"
+	"github.com/GLCharge/distributed-scheduler/executor"
 	"net/http"
 	"os"
 	"os/signal"
@@ -121,11 +121,6 @@ func run(log *zap.SugaredLogger) error {
 		db.Close()
 	}()
 
-	err = dbmigrate.Migrate(context.Background(), db)
-	if err != nil {
-		return fmt.Errorf("migrating database: %w", err)
-	}
-
 	// -------------------------------------------------------------------------
 	// Start API Service
 
@@ -166,9 +161,12 @@ func run(log *zap.SugaredLogger) error {
 
 	jobService := job.NewService(store, log)
 
+	executorFactory := executor.NewFactory(&http.Client{Timeout: 30 * time.Second})
+
 	sch := scheduler.New(scheduler.Config{
 		JobService:        jobService,
 		Log:               log,
+		ExecutorFactory:   executorFactory,
 		InstanceId:        cfg.Scheduler.ID,
 		Interval:          cfg.Scheduler.Interval,
 		MaxConcurrentJobs: cfg.Scheduler.MaxConcurrentJobs,
@@ -181,6 +179,13 @@ func run(log *zap.SugaredLogger) error {
 
 	select {
 	case err := <-serverErrors:
+
+		ctx, cancel := context.WithTimeout(context.Background(), cfg.Web.ShutdownTimeout)
+		defer cancel()
+
+		// stop the scheduler
+		sch.Stop(ctx)
+
 		return fmt.Errorf("server error: %w", err)
 
 	case sig := <-shutdown:

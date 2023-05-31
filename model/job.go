@@ -2,16 +2,11 @@ package model
 
 import (
 	"context"
-	"fmt"
-	"io"
-	"net/http"
-	"strings"
 	"time"
 
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/google/uuid"
-	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/robfig/cron/v3"
 )
 
@@ -119,15 +114,16 @@ func (j *Job) ApplyUpdate(update JobUpdate) {
 
 	j.UpdatedAt = time.Now()
 
-	j.SetNextRunTime()
+	j.SetInitialRunTime()
 }
 
 type HTTPJob struct {
-	URL     string            `json:"url"`
-	Method  string            `json:"method"`
-	Headers map[string]string `json:"headers"`
-	Body    null.String       `json:"body"`
-	Auth    AuthMethod        `json:"auth"`
+	URL                string            `json:"url"`
+	Method             string            `json:"method"`
+	Headers            map[string]string `json:"headers"`
+	Body               null.String       `json:"body"`
+	ValidResponseCodes []int             `json:"valid_response_codes"`
+	Auth               Auth              `json:"auth"`
 }
 
 type AMQPJob struct {
@@ -144,7 +140,7 @@ type AMQPJob struct {
 	NoWait       bool           `json:"no_wait"`
 }
 
-type AuthMethod struct {
+type Auth struct {
 	Type        AuthType    `json:"type"`                   // e.g., "none", "basic", "bearer"
 	Username    null.String `json:"username,omitempty"`     // for "basic"
 	Password    null.String `json:"password,omitempty"`     // for "basic"
@@ -239,14 +235,25 @@ func (j *Job) SetNextRunTime() {
 
 	// if the job is a one-off job, set NextRun to null
 	if j.ExecuteAt.Valid {
-		if j.ExecuteAt.Time.Before(time.Now()) {
-			j.NextRun = null.Time{}
-		} else {
-			j.NextRun = j.ExecuteAt
-		}
+		j.NextRun = null.Time{}
 	}
 
 	j.UpdatedAt = time.Now()
+}
+
+func (j *Job) SetInitialRunTime() {
+	if j.CronSchedule.Valid {
+		schedule, err := cron.ParseStandard(j.CronSchedule.String)
+		if err != nil {
+			return
+		}
+
+		j.NextRun = null.TimeFrom(schedule.Next(time.Now()))
+	}
+
+	if j.ExecuteAt.Valid {
+		j.NextRun = null.TimeFrom(j.ExecuteAt.Time)
+	}
 }
 
 // Validate validates an AMQPJob struct.
@@ -266,7 +273,7 @@ func (amqpJob *AMQPJob) Validate() error {
 	return nil
 }
 
-func (auth *AuthMethod) Validate() error {
+func (auth *Auth) Validate() error {
 	if auth == nil {
 		return ErrAuthMethodNotDefined
 	}
@@ -315,160 +322,15 @@ func (j *JobCreate) ToJob() *Job {
 		UpdatedAt:    time.Now(),
 	}
 
-	job.SetNextRunTime()
+	job.SetInitialRunTime()
 
 	return job
 }
 
-// Execute runs the job.
-func (j *Job) Execute(ctx context.Context) error {
-	switch j.Type {
-	case JobTypeHTTP:
-		return j.executeHTTP(ctx)
-	case JobTypeAMQP:
-		return j.executeAMQP(ctx)
-	default:
-		return fmt.Errorf("unknown job type: %v", j.Type)
-	}
+func (j *Job) Execute(ctx context.Context, executor Executor) error {
+	return executor.Execute(ctx, j)
 }
 
-// executeHTTP executes an HTTP job.
-func (j *Job) executeHTTP(ctx context.Context) error {
-	// Create the HTTP request
-	req, err := j.createHTTPRequest(ctx)
-	if err != nil {
-		return err
-	}
-
-	// Send the request and get the response
-	resp, err := j.sendHTTPRequest(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	// Check the status code
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("received non-200 response: %s", resp.Status)
-	}
-
-	return nil
-}
-
-// createHTTPRequest creates an HTTP request for the job.
-func (j *Job) createHTTPRequest(ctx context.Context) (*http.Request, error) {
-	// Create the request body
-	body := j.createHTTPRequestBody()
-
-	// Create the request URL
-	urlStr := j.createHTTPRequestURL()
-
-	// Create a new HTTP request
-	req, err := http.NewRequestWithContext(ctx, j.HTTPJob.Method, urlStr, body)
-	if err != nil {
-		return nil, err
-	}
-
-	// Set the headers
-	j.setHTTPRequestHeaders(req)
-
-	// Set the auth
-	j.setHTTPRequestAuth(req)
-
-	return req, nil
-}
-
-// createHTTPRequestBody creates the request body for the job.
-func (j *Job) createHTTPRequestBody() io.Reader {
-	if !j.HTTPJob.Body.Valid || j.HTTPJob.Body.String == "" {
-		return nil
-	}
-
-	return strings.NewReader(j.HTTPJob.Body.String)
-}
-
-// createHTTPRequestURL creates the request URL for the job.
-func (j *Job) createHTTPRequestURL() string {
-	if strings.HasPrefix(j.HTTPJob.URL, "http://") || strings.HasPrefix(j.HTTPJob.URL, "https://") {
-		return j.HTTPJob.URL
-	}
-
-	return "https://" + j.HTTPJob.URL
-}
-
-// setHTTPRequestHeaders sets the headers for the HTTP request.
-func (j *Job) setHTTPRequestHeaders(req *http.Request) {
-	for key, value := range j.HTTPJob.Headers {
-		req.Header.Set(key, value)
-	}
-}
-
-// setHTTPRequestAuth sets the auth for the HTTP request.
-func (j *Job) setHTTPRequestAuth(req *http.Request) {
-	switch j.HTTPJob.Auth.Type {
-	case AuthTypeBasic:
-		req.SetBasicAuth(j.HTTPJob.Auth.Username.String, j.HTTPJob.Auth.Password.String)
-	case AuthTypeBearer:
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", j.HTTPJob.Auth.BearerToken.String))
-	}
-}
-
-// sendHTTPRequest sends an HTTP request and returns the response.
-func (j *Job) sendHTTPRequest(req *http.Request) (*http.Response, error) {
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
-}
-
-func (j *Job) executeAMQP(ctx context.Context) error {
-	// Create a new AMQP connection
-	conn, err := amqp.Dial(j.AMQPJob.Connection)
-	if err != nil {
-		return fmt.Errorf("failed to connect to AMQP: %w", err)
-	}
-	defer conn.Close()
-
-	// Create a new AMQP channel
-	ch, err := conn.Channel()
-	if err != nil {
-		return fmt.Errorf("failed to open a channel: %w", err)
-	}
-	defer ch.Close()
-
-	// Declare an exchange
-	err = ch.ExchangeDeclare(
-		j.AMQPJob.Exchange,     // name
-		j.AMQPJob.ExchangeType, // type
-		j.AMQPJob.Durable,      // durable
-		j.AMQPJob.AutoDelete,   // auto-deleted
-		j.AMQPJob.Internal,     // internal
-		j.AMQPJob.NoWait,       // no-wait
-		nil,                    // arguments
-	)
-	if err != nil {
-		return fmt.Errorf("failed to declare an exchange: %w", err)
-	}
-
-	// Publish a message to the exchange
-	err = ch.PublishWithContext(
-		ctx,
-		j.AMQPJob.Exchange,   // exchange
-		j.AMQPJob.RoutingKey, // routing key
-		false,                // mandatory
-		false,                // immediate
-		amqp.Publishing{
-			ContentType: j.AMQPJob.ContentType,
-			Body:        []byte(j.AMQPJob.Body),
-			Headers:     j.AMQPJob.Headers,
-		},
-	)
-	if err != nil {
-		return fmt.Errorf("failed to publish message: %w", err)
-	}
-
-	return nil
+type Executor interface {
+	Execute(ctx context.Context, job *Job) error
 }

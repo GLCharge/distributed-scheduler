@@ -21,7 +21,7 @@ type jobDB struct {
 	CreatedAt    time.Time   `db:"created_at"`
 	UpdatedAt    time.Time   `db:"updated_at"`
 	NextRun      null.Time   `db:"next_run"`
-	LockedAt     null.Time   `db:"locked_at"`
+	LockedUntil  null.Time   `db:"locked_until"`
 	LockedBy     null.String `db:"locked_by"`
 }
 

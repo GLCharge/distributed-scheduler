@@ -18,9 +18,8 @@ type Storer interface {
 	UpdateJob(ctx context.Context, job *model.Job) error
 
 	// Get jobs to run
-	GetJobsToRun(ctx context.Context, t time.Time, instanceID string) ([]*model.Job, error)
+	GetJobsToRun(ctx context.Context, at time.Time, lockedUntil time.Time, instanceID string, limit uint) ([]*model.Job, error)
 	FinishJob(ctx context.Context, jobID uuid.UUID, nextRun null.Time) error
 	CreateJobExecution(ctx context.Context, jobID uuid.UUID, startTime, stopTime time.Time, status model.JobExecutionStatus, errorMessage null.String) error
-
 	GetJobExecutions(ctx context.Context, jobID uuid.UUID, failedOnly bool, limit, offset uint64) ([]*model.JobExecution, error)
 }
