@@ -147,10 +147,7 @@ func (j *Jobs) GetJobExecutions() gin.HandlerFunc {
 		}
 
 		failedOnlyStr := ctx.Query("failedOnly")
-		failedOnly, err := strconv.ParseBool(failedOnlyStr)
-		if err != nil {
-			failedOnly = false
-		}
+		failedOnly, _ := strconv.ParseBool(failedOnlyStr)
 
 		limit, offset := LimitAndOffset(ctx)
 

@@ -1,4 +1,6 @@
 .git/
+.vscode
+.idea
 .dockerignore
 .gitignore
 makefile

@@ -5,7 +5,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: scheduler
     container_name: scheduler
     restart: always
     ports:
@@ -17,8 +16,6 @@ services:
   postgres:
     image: postgres:15
     restart: always
-    ports:
-      - "5436:5432"
     environment:
       POSTGRES_USER: scheduler
       POSTGRES_PASSWORD: scheduler

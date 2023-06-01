@@ -38,6 +38,9 @@ type Scheduler struct {
 
 	// limit the number of concurrent jobs
 	maxConcurrentJobs int
+
+	// job lock duration
+	jobLockDuration time.Duration
 }
 
 type JobService interface {
@@ -53,6 +56,7 @@ type Config struct {
 
 	Interval          time.Duration
 	MaxConcurrentJobs int
+	JobLockDuration   time.Duration
 }
 
 func New(cfg Config) *Scheduler {
@@ -68,6 +72,7 @@ func New(cfg Config) *Scheduler {
 		cancel:            cancel,
 		jobSemaphore:      make(chan struct{}, cfg.MaxConcurrentJobs),
 		maxConcurrentJobs: cfg.MaxConcurrentJobs,
+		jobLockDuration:   cfg.JobLockDuration,
 	}
 
 	s.stopWg.Add(1)
@@ -146,7 +151,7 @@ func (s *Scheduler) runJobs() {
 	defer cancel()
 
 	// Get the jobs that should be run
-	jobs, err := s.jobService.GetJobsToRun(ctx, now, now.Add(5*time.Second), s.instanceId, uint(s.maxConcurrentJobs))
+	jobs, err := s.jobService.GetJobsToRun(ctx, now, now.Add(s.jobLockDuration), s.instanceId, uint(s.maxConcurrentJobs))
 	if err != nil {
 		// Log the error and return
 		s.log.Error("Failed to get jobs to run", err)

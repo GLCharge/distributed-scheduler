@@ -3,24 +3,21 @@ package handlers
 import (
 	"context"
 	"github.com/GLCharge/distributed-scheduler/foundation/database"
-	"net/http"
-	"os"
-	"time"
-
 	"github.com/GLCharge/distributed-scheduler/handlers/jobs"
 	"github.com/GLCharge/distributed-scheduler/service/job"
 	"github.com/GLCharge/distributed-scheduler/store/postgres"
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
+	"net/http"
+	"os"
 )
 
 // APIMuxConfig contains all the mandatory systems required by handlers.
 type APIMuxConfig struct {
-	Shutdown           chan os.Signal
-	Log                *zap.SugaredLogger
-	DB                 *sqlx.DB
-	MaxJobLockDuration time.Duration
+	Shutdown chan os.Signal
+	Log      *zap.SugaredLogger
+	DB       *sqlx.DB
 }
 
 // APIMux constructs a http.Handler with all application routes defined.
@@ -43,7 +40,7 @@ func APIMux(cfg APIMuxConfig) http.Handler {
 	// Jobs
 
 	// Create a new PostgresSQL job store
-	jobStore := postgres.New(cfg.DB, cfg.Log, cfg.MaxJobLockDuration)
+	jobStore := postgres.New(cfg.DB, cfg.Log)
 
 	// Create a new job service with the job store and logger
 	jobService := job.NewService(jobStore, cfg.Log)

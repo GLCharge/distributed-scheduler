@@ -66,7 +66,7 @@ func run(log *zap.SugaredLogger) error {
 			ID                string        `conf:"default:instance1"`
 			Interval          time.Duration `conf:"default:10s"`
 			MaxConcurrentJobs int           `conf:"default:100"`
-			MaxJobLockTime    time.Duration `conf:"default:5m"`
+			MaxJobLockTime    time.Duration `conf:"default:1m"`
 		}
 	}{
 		Version: conf.Version{
@@ -130,10 +130,9 @@ func run(log *zap.SugaredLogger) error {
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 
 	apiMux := handlers.APIMux(handlers.APIMuxConfig{
-		Shutdown:           shutdown,
-		Log:                log,
-		MaxJobLockDuration: cfg.Scheduler.MaxJobLockTime,
-		DB:                 db,
+		Shutdown: shutdown,
+		Log:      log,
+		DB:       db,
 	})
 
 	api := http.Server{
@@ -157,7 +156,7 @@ func run(log *zap.SugaredLogger) error {
 
 	log.Infow("startup", "status", "initializing Scheduler support")
 
-	store := postgres.New(db, log, cfg.Scheduler.MaxJobLockTime)
+	store := postgres.New(db, log)
 
 	jobService := job.NewService(store, log)
 

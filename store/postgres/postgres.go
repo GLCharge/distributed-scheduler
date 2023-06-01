@@ -16,17 +16,15 @@ import (
 )
 
 type pgStore struct {
-	db                 *sqlx.DB
-	log                *zap.SugaredLogger
-	maxJobLockDuration time.Duration
+	db  *sqlx.DB
+	log *zap.SugaredLogger
 }
 
-// New creates a new PostgreSQL store.
-func New(db *sqlx.DB, log *zap.SugaredLogger, maxJobLockDuration time.Duration) store.Storer {
+// New creates a new PostgresSQL store.
+func New(db *sqlx.DB, log *zap.SugaredLogger) store.Storer {
 	return &pgStore{
-		db:                 db,
-		log:                log,
-		maxJobLockDuration: maxJobLockDuration,
+		db:  db,
+		log: log,
 	}
 }
 
@@ -197,17 +195,18 @@ func (s *pgStore) ListJobs(ctx context.Context, limit, offset uint64) ([]*model.
 }
 
 func (s *pgStore) GetJobsToRun(ctx context.Context, at time.Time, lockedUntil time.Time, instanceID string, limit uint) ([]*model.Job, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := s.db.Beginx()
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
 
-	// Get jobs that should be run at time t and are not currently locked
+	defer rollback(tx, s.log)
+
+	// Get jobs that should be run at time at and are not currently locked
 	rows, err := tx.QueryContext(ctx, `
 	   SELECT *
 	   FROM jobs
-	   WHERE next_run <= $1 AND (locked_until IS NULL OR locked_until < $2) AND status = 'RUNNING'
+	   WHERE next_run <= $1 AND (locked_until IS NULL OR locked_until <= $2) AND status = 'RUNNING'
 	   LIMIT $3
 	   FOR UPDATE SKIP LOCKED
 	`, at, at, limit)
