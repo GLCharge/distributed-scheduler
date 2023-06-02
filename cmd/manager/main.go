@@ -5,7 +5,6 @@ import (
 	"errors"
 	"expvar"
 	"fmt"
-	"github.com/GLCharge/distributed-scheduler/executor"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,9 +14,6 @@ import (
 	"github.com/GLCharge/distributed-scheduler/foundation/database"
 	"github.com/GLCharge/distributed-scheduler/foundation/logger"
 	"github.com/GLCharge/distributed-scheduler/handlers"
-	"github.com/GLCharge/distributed-scheduler/scheduler"
-	"github.com/GLCharge/distributed-scheduler/service/job"
-	"github.com/GLCharge/distributed-scheduler/store/postgres"
 	"github.com/ardanlabs/conf/v3"
 	"go.uber.org/zap"
 )
@@ -25,7 +21,7 @@ import (
 var build = "develop"
 
 func main() {
-	log, err := logger.New("SCHEDULER")
+	log, err := logger.New("MANAGER")
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -43,7 +39,6 @@ func run(log *zap.SugaredLogger) error {
 
 	// -------------------------------------------------------------------------
 	// Configuration
-
 	cfg := struct {
 		conf.Version
 		Web struct {
@@ -62,12 +57,6 @@ func run(log *zap.SugaredLogger) error {
 			MaxOpenConns int    `conf:"default:2"`
 			DisableTLS   bool   `conf:"default:true"`
 		}
-		Scheduler struct {
-			ID                string        `conf:"default:instance1"`
-			Interval          time.Duration `conf:"default:10s"`
-			MaxConcurrentJobs int           `conf:"default:100"`
-			MaxJobLockTime    time.Duration `conf:"default:1m"`
-		}
 	}{
 		Version: conf.Version{
 			Build: build,
@@ -75,7 +64,7 @@ func run(log *zap.SugaredLogger) error {
 		},
 	}
 
-	const prefix = "SCHEDULER"
+	const prefix = "MANAGER"
 	help, err := conf.Parse(prefix, &cfg)
 	if err != nil {
 		if errors.Is(err, conf.ErrHelpWanted) {
@@ -152,50 +141,17 @@ func run(log *zap.SugaredLogger) error {
 	}()
 
 	// -------------------------------------------------------------------------
-	// Start Scheduler Service
-
-	log.Infow("startup", "status", "initializing Scheduler support")
-
-	store := postgres.New(db, log)
-
-	jobService := job.NewService(store, log)
-
-	executorFactory := executor.NewFactory(&http.Client{Timeout: 30 * time.Second})
-
-	sch := scheduler.New(scheduler.Config{
-		JobService:        jobService,
-		Log:               log,
-		ExecutorFactory:   executorFactory,
-		InstanceId:        cfg.Scheduler.ID,
-		Interval:          cfg.Scheduler.Interval,
-		MaxConcurrentJobs: cfg.Scheduler.MaxConcurrentJobs,
-	})
-
-	sch.Start()
-
-	// -------------------------------------------------------------------------
 	// Shutdown
 
 	select {
 	case err := <-serverErrors:
-
-		ctx, cancel := context.WithTimeout(context.Background(), cfg.Web.ShutdownTimeout)
-		defer cancel()
-
-		// stop the scheduler
-		sch.Stop(ctx)
-
 		return fmt.Errorf("server error: %w", err)
-
 	case sig := <-shutdown:
 		log.Infow("shutdown", "status", "shutdown started", "signal", sig)
 		defer log.Infow("shutdown", "status", "shutdown complete", "signal", sig)
 
 		ctx, cancel := context.WithTimeout(context.Background(), cfg.Web.ShutdownTimeout)
 		defer cancel()
-
-		// stop the scheduler
-		sch.Stop(ctx)
 
 		if err := api.Shutdown(ctx); err != nil {
 			api.Close()

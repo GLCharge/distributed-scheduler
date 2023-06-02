@@ -48,7 +48,7 @@ func crud(t *testing.T) {
 		test.Teardown()
 	}()
 
-	jobService := NewService(postgres.New(test.DB, test.Log, 5*time.Second), test.Log)
+	jobService := NewService(postgres.New(test.DB, test.Log), test.Log)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -171,7 +171,7 @@ func jobExecution(t *testing.T) {
 		test.Teardown()
 	}()
 
-	jobService := NewService(postgres.New(test.DB, test.Log, 5*time.Second), test.Log)
+	jobService := NewService(postgres.New(test.DB, test.Log), test.Log)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

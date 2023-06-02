@@ -1,39 +1,39 @@
-package scheduler
+package runner
 
 import (
 	"context"
-	"github.com/GLCharge/distributed-scheduler/executor"
 	"sync"
 	"time"
 
+	"github.com/GLCharge/distributed-scheduler/executor"
 	"github.com/GLCharge/distributed-scheduler/model"
 	"go.uber.org/zap"
 )
 
-type Scheduler struct {
+type Runner struct {
 	jobService JobService
 
-	executorFactory *executor.Factory
+	executorFactory executor.Factory
 	ticker          *time.Ticker
 	log             *zap.SugaredLogger
 
-	// Add an instance ID to identify the scheduler
+	// Add an instance ID to identify the runner
 	instanceId string
 
-	// Add a context and cancel function to stop the scheduler
+	// Add a context and cancel function to stop the runner
 	ctx    context.Context
 	cancel context.CancelFunc
 
 	// add a wait group to wait for all jobs to finish
 	wg sync.WaitGroup
 
-	// Add a wait group to wait for the scheduler to stop
+	// Add a wait group to wait for the runner to stop
 	stopWg sync.WaitGroup
 
 	// Add a semaphore to limit the number of concurrent jobs
 	jobSemaphore chan struct{}
 
-	// Add a sync.Once to ensure the scheduler only starts once
+	// Add a sync.Once to ensure the runner only starts once
 	startOnce sync.Once
 
 	// limit the number of concurrent jobs
@@ -50,7 +50,7 @@ type JobService interface {
 
 type Config struct {
 	JobService      JobService
-	ExecutorFactory *executor.Factory
+	ExecutorFactory executor.Factory
 	Log             *zap.SugaredLogger
 	InstanceId      string
 
@@ -59,10 +59,10 @@ type Config struct {
 	JobLockDuration   time.Duration
 }
 
-func New(cfg Config) *Scheduler {
+func New(cfg Config) *Runner {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	s := &Scheduler{
+	s := &Runner{
 		jobService:        cfg.JobService,
 		instanceId:        cfg.InstanceId,
 		log:               cfg.Log,
@@ -80,23 +80,23 @@ func New(cfg Config) *Scheduler {
 	return s
 }
 
-// Start is a method to start the scheduler.
+// Start is a method to start the runner.
 // It is safe to call this method multiple times. Only the first
-// call will start the scheduler. Subsequent calls will be ignored.
-func (s *Scheduler) Start() {
-	// Use a sync.Once to ensure the scheduler only starts once
+// call will start the runner. Subsequent calls will be ignored.
+func (s *Runner) Start() {
+	// Use a sync.Once to ensure the runner only starts once
 	s.startOnce.Do(func() {
-		go s.start()
+		s.start()
 	})
 }
 
-// start is a private method to start the scheduler
+// start is a private method to start the runner
 // in a separate goroutine.
-// It will run until the scheduler is stopped.
-func (s *Scheduler) start() {
-	// Run the scheduler in a separate goroutine
+// It will run until the runner is stopped.
+func (s *Runner) start() {
+	// Run the runner in a separate goroutine
 	go func() {
-		defer s.stopWg.Done() // Signal that the scheduler has stopped
+		defer s.stopWg.Done() // Signal that the runner has stopped
 		defer s.ticker.Stop() // Stop the ticker
 
 		for {
@@ -111,10 +111,10 @@ func (s *Scheduler) start() {
 	}()
 }
 
-// Stop is a method to stop the scheduler, with a context
+// Stop is a method to stop the runner, with a context
 // to allow for a timeout. if the context has no deadline,
 // default to a 10-second timeout.
-func (s *Scheduler) Stop(ctx context.Context) {
+func (s *Runner) Stop(ctx context.Context) {
 	// check if context has a deadline, and if not, create one
 	if _, ok := ctx.Deadline(); !ok {
 		var cancel context.CancelFunc
@@ -122,10 +122,10 @@ func (s *Scheduler) Stop(ctx context.Context) {
 		defer cancel()
 	}
 
-	// Cancel the scheduler context to stop the scheduler
+	// Cancel the runner context to stop the runner
 	s.cancel()
 
-	// Wait for the scheduler to stop, with a timeout
+	// Wait for the runner to stop, with a timeout
 	c := make(chan struct{})
 	go func() {
 		defer close(c)
@@ -134,16 +134,16 @@ func (s *Scheduler) Stop(ctx context.Context) {
 
 	select {
 	case <-c:
-		// The scheduler stopped
-		s.log.Infow("Scheduler stopped")
+		// The runner stopped
+		s.log.Infow("Runner stopped")
 
 	case <-ctx.Done():
 		// Timeout
-		s.log.Warn("Timeout while stopping the scheduler")
+		s.log.Warn("Timeout while stopping the runner")
 	}
 }
 
-func (s *Scheduler) runJobs() {
+func (s *Runner) runJobs() {
 	// Get the current time
 	now := time.Now()
 
@@ -154,7 +154,7 @@ func (s *Scheduler) runJobs() {
 	jobs, err := s.jobService.GetJobsToRun(ctx, now, now.Add(s.jobLockDuration), s.instanceId, uint(s.maxConcurrentJobs))
 	if err != nil {
 		// Log the error and return
-		s.log.Error("Failed to get jobs to run", err)
+		s.log.Errorw("Failed to get jobs to run", err)
 		return
 	}
 
@@ -166,7 +166,7 @@ func (s *Scheduler) runJobs() {
 	}
 }
 
-func (s *Scheduler) executeJob(job *model.Job) {
+func (s *Runner) executeJob(job *model.Job) {
 
 	s.jobSemaphore <- struct{}{} // Acquire a slot in the semaphore
 	s.wg.Add(1)                  // Increment the wait group counter

@@ -1,19 +1,29 @@
 
-APP_NAME=scheduler
+API_NAME=manager
+RUNNER_NAME=runner
 
-build:
+build/api:
 	@echo "Building..."
-	@go build -o bin/$(APP_NAME) cmd/$(APP_NAME)/main.go
+	@go build -o bin/$(API_NAME) cmd/$(API_NAME)/main.go
 
-run: dev-up
+build/runner:
+	@echo "Building..."
+	@go build -o bin/$(RUNNER_NAME) cmd/$(RUNNER_NAME)/main.go
+
+run/api: dev/up
 	@echo "Running..."
-	@bin/$(APP_NAME)
+	@bin/$(API_NAME)
 
-dev-up:
+run/runner: dev/up
+	@echo "Running..."
+	@bin/$(RUNNER_NAME)
+
+
+dev/up:
 	@echo "Starting dev environment..."
 	@docker compose -f docker-compose.dev.yml up -d
 
-dev-down:
+dev/down:
 	@echo "Stopping dev environment..."
 	@docker compose -f docker-compose.dev.yml down
 
@@ -22,8 +32,16 @@ test:
 	@go test -v --race ./...
 
 
-db-migrate:
+db/migrate: dev/up
 	@echo "Running migrations..."
 	@go run cmd/tooling/main.go migrate --host=localhost:5436
 
-.PHONY: build run dev-up dev-down db-migrate test
+get/api/flags:
+	@echo "Getting flags..."
+	@go run cmd/$(API_NAME)/main.go --help
+
+get/runner/flags:
+	@echo "Getting flags..."
+	@go run cmd/$(RUNNER_NAME)/main.go --help
+
+.PHONY: build/api build/runner run/api run/runner dev/up dev/down test db/migrate get/api/flags get/runner/flags

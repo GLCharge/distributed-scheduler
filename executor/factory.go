@@ -5,12 +5,16 @@ import (
 	"github.com/GLCharge/distributed-scheduler/model"
 )
 
-type Factory struct {
+type Factory interface {
+	NewExecutor(job *model.Job, options ...Option) (model.Executor, error)
+}
+
+type factory struct {
 	client HttpClient
 }
 
-func NewFactory(client HttpClient) *Factory {
-	return &Factory{
+func NewFactory(client HttpClient) Factory {
+	return &factory{
 		client: client,
 	}
 }
@@ -18,7 +22,7 @@ func NewFactory(client HttpClient) *Factory {
 // Option is a function that modifies an executor before it is returned (e.g. WithRetry)
 type Option func(executor model.Executor) model.Executor
 
-func (f *Factory) NewExecutor(job *model.Job, options ...Option) (model.Executor, error) {
+func (f *factory) NewExecutor(job *model.Job, options ...Option) (model.Executor, error) {
 
 	var executor model.Executor
 	switch job.Type {

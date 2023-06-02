@@ -1,16 +1,26 @@
 version: '3'
 
 services:
-  scheduler:
+  manager:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: scheduler
+      dockerfile: build/manager/Dockerfile
+    container_name: manager
     restart: always
     ports:
       - "8000:8000"
     environment:
-      - SCHEDULER_DB_HOST=postgres:5432
+      - MANAGER_DB_HOST=postgres:5432
+    depends_on:
+      - postgres
+  runner:
+    build:
+      context: .
+      dockerfile: build/runner/Dockerfile
+    container_name: runner
+    restart: always
+    environment:
+      - RUNNER_DB_HOST=postgres:5432
     depends_on:
       - postgres
   postgres:

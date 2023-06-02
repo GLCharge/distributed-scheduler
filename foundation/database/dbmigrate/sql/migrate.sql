@@ -50,7 +50,7 @@ ALTER TABLE jobs ADD CONSTRAINT
 
 CREATE INDEX next_run_index ON jobs (next_run);
 
-CREATE INDEX locked_at_index ON jobs (locked_until);
+CREATE INDEX locked_until_index ON jobs (locked_until);
 
 CREATE TABLE job_executions (
     id SERIAL PRIMARY KEY,
