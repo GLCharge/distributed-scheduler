@@ -12,7 +12,7 @@ type JobExecution struct {
 	StartTime    time.Time   `json:"start_time"`
 	EndTime      time.Time   `json:"end_time"`
 	Success      bool        `json:"success"`
-	ErrorMessage null.String `json:"error_message,omitempty"`
+	ErrorMessage null.String `json:"error_message,omitempty" swaggertype:"string"`
 }
 
 type JobExecutionStatus string

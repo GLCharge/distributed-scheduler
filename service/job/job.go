@@ -37,9 +37,6 @@ func (s *Service) CreateJob(ctx context.Context, jobCreate *model.JobCreate) (*m
 		return nil, err
 	}
 
-	// Log the creation of the job
-	s.log.Infow("Creating job", "job", job)
-
 	// Create the job using the store
 	err := s.store.CreateJob(ctx, job)
 	if err != nil {
@@ -50,13 +47,13 @@ func (s *Service) CreateJob(ctx context.Context, jobCreate *model.JobCreate) (*m
 }
 
 // GetJob returns the job with the given ID.
-func (s *Service) GetJob(ctx context.Context, id string) (*model.Job, error) {
+func (s *Service) GetJob(ctx context.Context, id uuid.UUID) (*model.Job, error) {
 
 	return s.store.GetJob(ctx, id)
 }
 
 // UpdateJob updates the given job.
-func (s *Service) UpdateJob(ctx context.Context, jobID string, jobUpdate model.JobUpdate) (*model.Job, error) {
+func (s *Service) UpdateJob(ctx context.Context, jobID uuid.UUID, jobUpdate model.JobUpdate) (*model.Job, error) {
 	// get the job from the store
 	job, err := s.store.GetJob(ctx, jobID)
 	if err != nil {
@@ -81,7 +78,7 @@ func (s *Service) UpdateJob(ctx context.Context, jobID string, jobUpdate model.J
 }
 
 // DeleteJob deletes the job with the given ID.
-func (s *Service) DeleteJob(ctx context.Context, id string) error {
+func (s *Service) DeleteJob(ctx context.Context, id uuid.UUID) error {
 	// Implement deleting a specific job using the store
 
 	return s.store.DeleteJob(ctx, id)

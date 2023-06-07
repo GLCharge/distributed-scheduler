@@ -60,13 +60,14 @@ func (at AuthType) Valid() bool {
 	}
 }
 
+// swagger:model Job
 type Job struct {
 	ID     uuid.UUID `json:"id"`
 	Type   JobType   `json:"type"`
 	Status JobStatus `json:"status"`
 
-	ExecuteAt    null.Time   `json:"execute_at"`    // for one-off jobs
-	CronSchedule null.String `json:"cron_schedule"` // for recurring jobs
+	ExecuteAt    null.Time   `json:"execute_at" swaggertype:"string"`    // for one-off jobs
+	CronSchedule null.String `json:"cron_schedule" swaggertype:"string"` // for recurring jobs
 
 	HTTPJob *HTTPJob `json:"http_job,omitempty"`
 
@@ -79,6 +80,7 @@ type Job struct {
 	NextRun null.Time `json:"next_run"`
 }
 
+// swagger:model JobUpdate
 type JobUpdate struct {
 	Type *JobType `json:"type,omitempty"`
 	HTTP *HTTPJob `json:"http,omitempty"`
@@ -118,33 +120,28 @@ func (j *Job) ApplyUpdate(update JobUpdate) {
 }
 
 type HTTPJob struct {
-	URL                string            `json:"url"`
-	Method             string            `json:"method"`
-	Headers            map[string]string `json:"headers"`
-	Body               null.String       `json:"body"`
-	ValidResponseCodes []int             `json:"valid_response_codes"`
-	Auth               Auth              `json:"auth"`
+	URL                string            `json:"url"`                       // e.g., "https://example.com"
+	Method             string            `json:"method"`                    // e.g., "GET", "POST", "PUT", "PATCH", "DELETE"
+	Headers            map[string]string `json:"headers"`                   // e.g., {"Content-Type": "application/json"}
+	Body               null.String       `json:"body" swaggertype:"string"` // e.g., "{\"hello\": \"world\"}"
+	ValidResponseCodes []int             `json:"valid_response_codes"`      // e.g., [200, 201, 202]
+	Auth               Auth              `json:"auth"`                      // e.g., {"type": "basic", "username": "foo", "password": "bar"}
 }
 
 type AMQPJob struct {
-	Connection   string         `json:"connection"`    // e.g., "amqp://guest:guest@localhost:5672/"
-	Exchange     string         `json:"exchange"`      // e.g., "my_exchange"
-	ExchangeType string         `json:"exchange_type"` // e.g., "direct"
-	RoutingKey   string         `json:"routing_key"`   // e.g., "my_routing_key"
-	Headers      map[string]any `json:"headers"`
-	Body         string         `json:"body"`
-	ContentType  string         `json:"content_type"`
-	AutoDelete   bool           `json:"auto_delete"`
-	Internal     bool           `json:"internal"`
-	Durable      bool           `json:"durable"`
-	NoWait       bool           `json:"no_wait"`
+	Connection  string         `json:"connection"`   // e.g., "amqp://guest:guest@localhost:5672/"
+	Exchange    string         `json:"exchange"`     // e.g., "my_exchange"
+	RoutingKey  string         `json:"routing_key"`  // e.g., "my_routing_key"
+	Headers     map[string]any `json:"headers"`      // e.g., {"x-delay": 10000}
+	Body        string         `json:"body"`         // e.g., "Hello, world!"
+	ContentType string         `json:"content_type"` // e.g., "text/plain"
 }
 
 type Auth struct {
-	Type        AuthType    `json:"type"`                   // e.g., "none", "basic", "bearer"
-	Username    null.String `json:"username,omitempty"`     // for "basic"
-	Password    null.String `json:"password,omitempty"`     // for "basic"
-	BearerToken null.String `json:"bearer_token,omitempty"` // for "bearer"
+	Type        AuthType    `json:"type"`                                        // e.g., "none", "basic", "bearer"
+	Username    null.String `json:"username,omitempty" swaggertype:"string"`     // for "basic"
+	Password    null.String `json:"password,omitempty" swaggertype:"string"`     // for "basic"
+	BearerToken null.String `json:"bearer_token,omitempty" swaggertype:"string"` // for "bearer"
 }
 
 // Validate validates a Job struct.
@@ -190,6 +187,7 @@ func (j *Job) Validate() error {
 		if _, err := cron.ParseStandard(j.CronSchedule.String); err != nil {
 			return ErrInvalidCronSchedule
 		}
+		cron.NewChain()
 	}
 
 	if j.ExecuteAt.Valid {
@@ -300,12 +298,16 @@ func (auth *Auth) Validate() error {
 }
 
 type JobCreate struct {
-	Type         JobType     `json:"type"`
-	ExecuteAt    null.Time   `json:"execute_at"`    // for one-off jobs
-	CronSchedule null.String `json:"cron_schedule"` // for recurring jobs
 
+	// Job type
+	Type JobType `json:"type"`
+
+	// ExecuteAt and CronSchedule are mutually exclusive.
+	ExecuteAt    null.Time   `json:"execute_at" swaggertype:"string"`    // for one-off jobs
+	CronSchedule null.String `json:"cron_schedule" swaggertype:"string"` // for recurring jobs
+
+	// HTTPJob and AMQPJob are mutually exclusive.
 	HTTPJob *HTTPJob `json:"http_job,omitempty"`
-
 	AMQPJob *AMQPJob `json:"amqp_job,omitempty"`
 }
 

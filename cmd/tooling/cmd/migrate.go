@@ -24,8 +24,8 @@ func init() {
 	migrateCmd.Flags().StringVar(&dbConfig.Host, "host", "localhost:5432", "database host")
 	migrateCmd.Flags().StringVar(&dbConfig.Name, "name", "scheduler", "database name")
 	migrateCmd.Flags().BoolVar(&dbConfig.DisableTLS, "disable_tls", true, "database sslmode disabled")
-	migrateCmd.Flags().IntVar(&dbConfig.MaxIdleConns, "maxidleconns", 3, "database max idle connections")
-	migrateCmd.Flags().IntVar(&dbConfig.MaxOpenConns, "maxopenconns", 2, "database max open connections")
+	migrateCmd.Flags().IntVar(&dbConfig.MaxIdleConns, "max_idle_conns", 3, "database max idle connections")
+	migrateCmd.Flags().IntVar(&dbConfig.MaxOpenConns, "max_open_conns", 2, "database max open connections")
 }
 
 func migrateRun(cmd *cobra.Command, args []string) {

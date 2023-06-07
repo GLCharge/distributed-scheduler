@@ -133,20 +133,6 @@ func (ae *aMQPExecutor) Execute(ctx context.Context, j *model.Job) error {
 	}
 	defer ch.Close()
 
-	// Declare an exchange
-	err = ch.ExchangeDeclare(
-		j.AMQPJob.Exchange,     // name
-		j.AMQPJob.ExchangeType, // type
-		j.AMQPJob.Durable,      // durable
-		j.AMQPJob.AutoDelete,   // auto-deleted
-		j.AMQPJob.Internal,     // internal
-		j.AMQPJob.NoWait,       // no-wait
-		nil,                    // arguments
-	)
-	if err != nil {
-		return fmt.Errorf("failed to declare an exchange: %w", err)
-	}
-
 	// Publish a message to the exchange
 	err = ch.PublishWithContext(
 		ctx,

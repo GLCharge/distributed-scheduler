@@ -16,6 +16,11 @@ RUN go mod verify
 # Copy the source code from the current directory to the working directory inside the container
 COPY . .
 
+# install go swaggo, used to generate swagger docs
+RUN go install github.com/swaggo/swag/cmd/swag@v1.8.12
+# build docs
+RUN swag init -g handlers/doc.go
+
 # Build the Go application
 RUN go build -o bin/manager cmd/manager/main.go
 

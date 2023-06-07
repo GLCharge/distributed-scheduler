@@ -158,7 +158,7 @@ func (s *Runner) runJobs() {
 		return
 	}
 
-	s.log.Infow("Running jobs", "count", len(jobs))
+	s.log.Debugw("Running jobs", "count", len(jobs))
 
 	// Run each job
 	for _, j := range jobs {
@@ -175,7 +175,7 @@ func (s *Runner) executeJob(job *model.Job) {
 		defer s.wg.Done()                   // Decrement the wait group counter
 		defer func() { <-s.jobSemaphore }() // Release the semaphore slot
 
-		s.log.Infow("Executing job", "jobID", job.ID)
+		s.log.Debugw("Executing job", "jobID", job.ID)
 
 		// Create a new executor for the job with retry enabled
 		jobExecutor, err := s.executorFactory.NewExecutor(job, executor.WithRetry)
@@ -197,6 +197,6 @@ func (s *Runner) executeJob(job *model.Job) {
 			s.log.Errorw("Failed to report job as finished", "jobID", job.ID, "error", err)
 		}
 
-		s.log.Infow("Job finished", "jobID", job.ID)
+		s.log.Debugw("Job finished", "jobID", job.ID)
 	}()
 }

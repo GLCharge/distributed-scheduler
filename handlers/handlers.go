@@ -2,22 +2,21 @@ package handlers
 
 import (
 	"context"
+	"net/http"
+
 	"github.com/GLCharge/distributed-scheduler/foundation/database"
-	"github.com/GLCharge/distributed-scheduler/handlers/jobs"
 	"github.com/GLCharge/distributed-scheduler/service/job"
 	"github.com/GLCharge/distributed-scheduler/store/postgres"
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
-	"net/http"
-	"os"
 )
 
 // APIMuxConfig contains all the mandatory systems required by handlers.
 type APIMuxConfig struct {
-	Shutdown chan os.Signal
-	Log      *zap.SugaredLogger
-	DB       *sqlx.DB
+	Log     *zap.SugaredLogger
+	DB      *sqlx.DB
+	OpenApi OpenApiConfig
 }
 
 // APIMux constructs a http.Handler with all application routes defined.
@@ -37,6 +36,10 @@ func APIMux(cfg APIMuxConfig) http.Handler {
 	router.GET("/health", healthCheck(cfg))
 
 	// ==================
+	// OpenAPI (will only mount if enabled)
+	OpenApiRoute(cfg.OpenApi, router)
+
+	// ==================
 	// Jobs
 
 	// Create a new PostgresSQL job store
@@ -46,18 +49,10 @@ func APIMux(cfg APIMuxConfig) http.Handler {
 	jobService := job.NewService(jobStore, cfg.Log)
 
 	// Create a new jobs handler with the job service
-	jobsHandler := jobs.NewJobsHandler(jobService)
+	jobsHandler := NewJobsHandler(jobService)
 
 	// Define a group of routes for the jobs endpoint
-	jobsRouter := router.Group("/v1/jobs")
-	{
-		jobsRouter.POST("", jobsHandler.CreateJob())
-		jobsRouter.GET("/:id", jobsHandler.GetJob())
-		jobsRouter.PUT("/:id", jobsHandler.UpdateJob())
-		jobsRouter.DELETE("/:id", jobsHandler.DeleteJob())
-		jobsRouter.GET("", jobsHandler.ListJobs())
-		jobsRouter.GET("/:id/executions", jobsHandler.GetJobExecutions())
-	}
+	JobsRoutesV1(router, jobsHandler)
 
 	// Return the router as a http.Handler
 	return router

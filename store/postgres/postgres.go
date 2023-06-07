@@ -132,7 +132,7 @@ func (s *pgStore) CreateJob(ctx context.Context, job *model.Job) error {
 	return nil
 }
 
-func (s *pgStore) GetJob(ctx context.Context, id string) (*model.Job, error) {
+func (s *pgStore) GetJob(ctx context.Context, id uuid.UUID) (*model.Job, error) {
 	// create a JobDB struct to hold the result of the query
 	var dbJob jobDB
 
@@ -157,7 +157,7 @@ func (s *pgStore) GetJob(ctx context.Context, id string) (*model.Job, error) {
 	return job, nil
 }
 
-func (s *pgStore) DeleteJob(ctx context.Context, id string) error {
+func (s *pgStore) DeleteJob(ctx context.Context, id uuid.UUID) error {
 	// delete job from database
 	query := `
         DELETE FROM jobs WHERE id = $1
@@ -173,7 +173,7 @@ func (s *pgStore) DeleteJob(ctx context.Context, id string) error {
 func (s *pgStore) ListJobs(ctx context.Context, limit, offset uint64) ([]*model.Job, error) {
 	// get all jobs from database
 	query := `
-        SELECT * FROM jobs ORDER BY created_at DESC LIMIT $1 OFFSET $2 
+        SELECT * FROM jobs ORDER BY id DESC LIMIT $1 OFFSET $2 
     `
 	var dbJobs []*jobDB
 	err := s.db.SelectContext(ctx, &dbJobs, query, limit, offset)

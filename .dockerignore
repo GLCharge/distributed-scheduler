@@ -3,5 +3,5 @@
 .idea
 .dockerignore
 .gitignore
-makefile
 docker-compose.dev.yml
+docs

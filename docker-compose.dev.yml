@@ -22,7 +22,6 @@ services:
       RABBITMQ_ERLANG_COOKIE: 'rabbitmq_cookie'
       RABBITMQ_DEFAULT_USER: 'guest'
       RABBITMQ_DEFAULT_PASS: 'guest'
-
 volumes:
   pgdata:
 

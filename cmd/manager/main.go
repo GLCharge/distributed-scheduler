@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"expvar"
 	"fmt"
 	"net/http"
 	"os"
@@ -57,6 +56,11 @@ func run(log *zap.SugaredLogger) error {
 			MaxOpenConns int    `conf:"default:2"`
 			DisableTLS   bool   `conf:"default:true"`
 		}
+		OpenAPI struct {
+			Scheme string `conf:"default:http"`
+			Enable bool   `conf:"default:true"`
+			Host   string `conf:"default:localhost:8000"`
+		}
 	}{
 		Version: conf.Version{
 			Build: build,
@@ -86,8 +90,6 @@ func run(log *zap.SugaredLogger) error {
 	}
 	log.Infow("startup", "config", out)
 
-	expvar.NewString("build").Set(build)
-
 	// -------------------------------------------------------------------------
 	// Database Support
 
@@ -105,6 +107,7 @@ func run(log *zap.SugaredLogger) error {
 	if err != nil {
 		return fmt.Errorf("connecting to db: %w", err)
 	}
+
 	defer func() {
 		log.Infow("shutdown", "status", "stopping database support", "host", cfg.DB.Host)
 		db.Close()
@@ -119,9 +122,13 @@ func run(log *zap.SugaredLogger) error {
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 
 	apiMux := handlers.APIMux(handlers.APIMuxConfig{
-		Shutdown: shutdown,
-		Log:      log,
-		DB:       db,
+		Log: log,
+		DB:  db,
+		OpenApi: handlers.OpenApiConfig{
+			Enabled: cfg.OpenAPI.Enable,
+			Scheme:  cfg.OpenAPI.Scheme,
+			Host:    cfg.OpenAPI.Host,
+		},
 	})
 
 	api := http.Server{

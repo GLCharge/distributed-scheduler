@@ -76,7 +76,7 @@ func crud(t *testing.T) {
 
 	// Get job 1
 	// -------------------------------------------------------------------------
-	job1, err1 := jobService.GetJob(ctx, job.ID.String())
+	job1, err1 := jobService.GetJob(ctx, job.ID)
 	if err1 != nil {
 		t.Fatalf("Should be able to get a job: %s", err1)
 	}
@@ -105,7 +105,7 @@ func crud(t *testing.T) {
 
 	// update job
 	// -------------------------------------------------------------------------
-	job, err = jobService.UpdateJob(ctx, job.ID.String(), model.JobUpdate{
+	job, err = jobService.UpdateJob(ctx, job.ID, model.JobUpdate{
 		CronSchedule: lo.ToPtr("@every 2m"),
 	})
 
@@ -143,7 +143,7 @@ func crud(t *testing.T) {
 
 	// Delete job
 	// -------------------------------------------------------------------------
-	err = jobService.DeleteJob(ctx, job.ID.String())
+	err = jobService.DeleteJob(ctx, job.ID)
 
 	if err != nil {
 		t.Fatalf("Should be able to delete a job: %s", err)
@@ -151,7 +151,7 @@ func crud(t *testing.T) {
 
 	// Get job
 	// -------------------------------------------------------------------------
-	_, err = jobService.GetJob(ctx, job.ID.String())
+	_, err = jobService.GetJob(ctx, job.ID)
 
 	if err == nil {
 		t.Fatalf("Should not be able to get a deleted job: %s", err)

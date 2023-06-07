@@ -12,8 +12,8 @@ import (
 type Storer interface {
 	// CRUD operations for jobs
 	CreateJob(ctx context.Context, job *model.Job) error
-	GetJob(ctx context.Context, id string) (*model.Job, error)
-	DeleteJob(ctx context.Context, id string) error
+	GetJob(ctx context.Context, id uuid.UUID) (*model.Job, error)
+	DeleteJob(ctx context.Context, id uuid.UUID) error
 	ListJobs(ctx context.Context, limit, offset uint64) ([]*model.Job, error)
 	UpdateJob(ctx context.Context, job *model.Job) error
 
