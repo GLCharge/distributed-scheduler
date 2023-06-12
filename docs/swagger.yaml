@@ -1,0 +1,375 @@
+basePath: /v1
+definitions:
+  handlers.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  model.AMQPJob:
+    properties:
+      body:
+        description: e.g., "Hello, world!"
+        type: string
+      connection:
+        description: e.g., "amqp://guest:guest@localhost:5672/"
+        type: string
+      content_type:
+        description: e.g., "text/plain"
+        type: string
+      exchange:
+        description: e.g., "my_exchange"
+        type: string
+      headers:
+        additionalProperties: { }
+        description: 'e.g., {"x-delay": 10000}'
+        type: object
+      routing_key:
+        description: e.g., "my_routing_key"
+        type: string
+    type: object
+  model.Auth:
+    properties:
+      bearer_token:
+        description: for "bearer"
+        type: string
+      password:
+        description: for "basic"
+        type: string
+      type:
+        allOf:
+          - $ref: '#/definitions/model.AuthType'
+        description: e.g., "none", "basic", "bearer"
+      username:
+        description: for "basic"
+        type: string
+    type: object
+  model.AuthType:
+    enum:
+      - none
+      - basic
+      - bearer
+    type: string
+    x-enum-varnames:
+      - AuthTypeNone
+      - AuthTypeBasic
+      - AuthTypeBearer
+  model.HTTPJob:
+    properties:
+      auth:
+        allOf:
+          - $ref: '#/definitions/model.Auth'
+        description: 'e.g., {"type": "basic", "username": "foo", "password": "bar"}'
+      body:
+        description: 'e.g., "{\"hello\": \"world\"}"'
+        type: string
+      headers:
+        additionalProperties:
+          type: string
+        description: 'e.g., {"Content-Type": "application/json"}'
+        type: object
+      method:
+        description: e.g., "GET", "POST", "PUT", "PATCH", "DELETE"
+        type: string
+      url:
+        description: e.g., "https://example.com"
+        type: string
+      valid_response_codes:
+        description: e.g., [200, 201, 202]
+        items:
+          type: integer
+        type: array
+    type: object
+  model.Job:
+    properties:
+      amqp_job:
+        $ref: '#/definitions/model.AMQPJob'
+      created_at:
+        type: string
+      cron_schedule:
+        description: for recurring jobs
+        type: string
+      execute_at:
+        description: for one-off jobs
+        type: string
+      http_job:
+        $ref: '#/definitions/model.HTTPJob'
+      id:
+        type: string
+      next_run:
+        description: when the job is scheduled to run next (can be null if the job
+          is not scheduled to run again)
+        type: string
+      status:
+        $ref: '#/definitions/model.JobStatus'
+      type:
+        $ref: '#/definitions/model.JobType'
+      updated_at:
+        type: string
+    type: object
+  model.JobCreate:
+    properties:
+      amqp_job:
+        $ref: '#/definitions/model.AMQPJob'
+      cron_schedule:
+        description: for recurring jobs
+        type: string
+      execute_at:
+        description: ExecuteAt and CronSchedule are mutually exclusive.
+        type: string
+      http_job:
+        allOf:
+          - $ref: '#/definitions/model.HTTPJob'
+        description: HTTPJob and AMQPJob are mutually exclusive.
+      type:
+        allOf:
+          - $ref: '#/definitions/model.JobType'
+        description: Job type
+    type: object
+  model.JobExecution:
+    properties:
+      end_time:
+        type: string
+      error_message:
+        type: string
+      id:
+        type: integer
+      job_id:
+        type: string
+      start_time:
+        type: string
+      success:
+        type: boolean
+    type: object
+  model.JobStatus:
+    enum:
+      - RUNNING
+      - STOPPED
+    type: string
+    x-enum-varnames:
+      - JobStatusRunning
+      - JobStatusStopped
+  model.JobType:
+    enum:
+      - HTTP
+      - AMQP
+    type: string
+    x-enum-varnames:
+      - JobTypeHTTP
+      - JobTypeAMQP
+  model.JobUpdate:
+    properties:
+      amqp:
+        $ref: '#/definitions/model.AMQPJob'
+      cron_schedule:
+        type: string
+      execute_at:
+        type: string
+      http:
+        $ref: '#/definitions/model.HTTPJob'
+      type:
+        $ref: '#/definitions/model.JobType'
+    type: object
+host: localhost:8000
+info:
+  contact: { }
+  description: This is scheduler management API server. Use this API to manage jobs.
+  title: Scheduler management API
+  version: "1.0"
+paths:
+  /jobs:
+    get:
+      consumes:
+        - application/json
+      description: List jobs with the given limit and offset
+      parameters:
+        - description: Limit
+          in: query
+          name: limit
+          type: integer
+        - description: Offset
+          in: query
+          name: offset
+          type: integer
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Job'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: List jobs
+      tags:
+        - jobs
+    post:
+      consumes:
+        - application/json
+      description: Create a job with the given job create request
+      parameters:
+        - description: Job Create
+          in: body
+          name: job
+          required: true
+          schema:
+            $ref: '#/definitions/model.JobCreate'
+      produces:
+        - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.Job'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Create a job
+      tags:
+        - jobs
+  /jobs/{id}:
+    delete:
+      consumes:
+        - application/json
+      description: Delete a job with the given job ID
+      parameters:
+        - description: Job ID
+          in: path
+          name: id
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Delete a job
+      tags:
+        - jobs
+    get:
+      consumes:
+        - application/json
+      description: Get a job with the given job ID
+      parameters:
+        - description: Job ID
+          in: path
+          name: id
+          required: true
+          type: string
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Job'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Get a job
+      tags:
+        - jobs
+    put:
+      consumes:
+        - application/json
+      description: Update a job with the given job update request
+      parameters:
+        - description: Job ID
+          in: path
+          name: id
+          required: true
+          type: string
+        - description: Job Update
+          in: body
+          name: job
+          required: true
+          schema:
+            $ref: '#/definitions/model.JobUpdate'
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Job'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Update a job
+      tags:
+        - jobs
+  /jobs/{id}/executions:
+    get:
+      consumes:
+        - application/json
+      description: Get job executions with the given job ID, failed only flag, limit
+        and offset
+      parameters:
+        - description: Job ID
+          in: path
+          name: id
+          required: true
+          type: string
+        - description: Failed Only
+          in: query
+          name: failedOnly
+          type: boolean
+        - description: Limit
+          in: query
+          name: limit
+          type: integer
+        - description: Offset
+          in: query
+          name: offset
+          type: integer
+      produces:
+        - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.JobExecution'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Get job executions
+      tags:
+        - jobs
+swagger: "2.0"
