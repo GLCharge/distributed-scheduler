@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"bytes"
 	"encoding/json"
 	"time"
 
@@ -43,7 +44,7 @@ func toJobDB(j *model.Job) (*jobDB, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to marshal http job")
 		}
-		dbJ.HTTPJob = httpJob
+		dbJ.HTTPJob = bytes.Trim(httpJob, "\x00")
 	}
 
 	if j.AMQPJob != nil {
@@ -51,7 +52,7 @@ func toJobDB(j *model.Job) (*jobDB, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to marshal amqp job")
 		}
-		dbJ.AMQPJob = amqpJob
+		dbJ.AMQPJob = bytes.Trim(amqpJob, "\x00")
 	}
 
 	return dbJ, nil

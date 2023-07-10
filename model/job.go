@@ -129,12 +129,12 @@ type HTTPJob struct {
 }
 
 type AMQPJob struct {
-	Connection  string         `json:"connection"`   // e.g., "amqp://guest:guest@localhost:5672/"
-	Exchange    string         `json:"exchange"`     // e.g., "my_exchange"
-	RoutingKey  string         `json:"routing_key"`  // e.g., "my_routing_key"
-	Headers     map[string]any `json:"headers"`      // e.g., {"x-delay": 10000}
-	Body        string         `json:"body"`         // e.g., "Hello, world!"
-	ContentType string         `json:"content_type"` // e.g., "text/plain"
+	Connection  string                 `json:"connection"`   // e.g., "amqp://guest:guest@localhost:5672/"
+	Exchange    string                 `json:"exchange"`     // e.g., "my_exchange"
+	RoutingKey  string                 `json:"routing_key"`  // e.g., "my_routing_key"
+	Headers     map[string]interface{} `json:"headers"`      // e.g., {"x-delay": 10000}
+	Body        string                 `json:"body"`         // e.g., "Hello, world!"
+	ContentType string                 `json:"content_type"` // e.g., "text/plain"
 }
 
 type Auth struct {
