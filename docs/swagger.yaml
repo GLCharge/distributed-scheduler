@@ -10,6 +10,10 @@ definitions:
       body:
         description: e.g., "Hello, world!"
         type: string
+      body_encoding:
+        allOf:
+        - $ref: '#/definitions/model.BodyEncoding'
+        description: e.g., "none", "base64", "protojson"
       connection:
         description: e.g., "amqp://guest:guest@localhost:5672/"
         type: string
@@ -53,6 +57,12 @@ definitions:
     - AuthTypeNone
     - AuthTypeBasic
     - AuthTypeBearer
+  model.BodyEncoding:
+    enum:
+    - base64
+    type: string
+    x-enum-varnames:
+    - BodyEncodingBase64
   model.HTTPJob:
     properties:
       auth:

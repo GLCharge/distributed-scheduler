@@ -321,6 +321,14 @@
                     "description": "e.g., \"Hello, world!\"",
                     "type": "string"
                 },
+                "body_encoding": {
+                    "description": "e.g., \"none\", \"base64\", \"protojson\"",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/model.BodyEncoding"
+                        }
+                    ]
+                },
                 "connection": {
                     "description": "e.g., \"amqp://guest:guest@localhost:5672/\"",
                     "type": "string"
@@ -380,6 +388,15 @@
                 "AuthTypeNone",
                 "AuthTypeBasic",
                 "AuthTypeBearer"
+            ]
+        },
+        "model.BodyEncoding": {
+            "type": "string",
+            "enum": [
+                "base64"
+            ],
+            "x-enum-varnames": [
+                "BodyEncodingBase64"
             ]
         },
         "model.HTTPJob": {
