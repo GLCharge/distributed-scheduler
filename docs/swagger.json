@@ -1,560 +1,577 @@
 {
-  "swagger": "2.0",
-  "info": {
-    "description": "This is scheduler management API server. Use this API to manage jobs.",
-    "title": "Scheduler management API",
-    "contact": {},
-    "version": "1.0"
-  },
-  "host": "localhost:8000",
-  "basePath": "/v1",
-  "paths": {
-    "/jobs": {
-      "get": {
-        "description": "List jobs with the given limit and offset",
-        "consumes": [
-          "application/json"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "jobs"
-        ],
-        "summary": "List jobs",
-        "parameters": [
-          {
-            "type": "integer",
-            "description": "Limit",
-            "name": "limit",
-            "in": "query"
-          },
-          {
-            "type": "integer",
-            "description": "Offset",
-            "name": "offset",
-            "in": "query"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/model.Job"
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "schema": {
-              "$ref": "#/definitions/handlers.ErrorResponse"
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "schema": {
-              "$ref": "#/definitions/handlers.ErrorResponse"
-            }
-          }
-        }
-      },
-      "post": {
-        "description": "Create a job with the given job create request",
-        "consumes": [
-          "application/json"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "jobs"
-        ],
-        "summary": "Create a job",
-        "parameters": [
-          {
-            "description": "Job Create",
-            "name": "job",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/model.JobCreate"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "Created",
-            "schema": {
-              "$ref": "#/definitions/model.Job"
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "schema": {
-              "$ref": "#/definitions/handlers.ErrorResponse"
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "schema": {
-              "$ref": "#/definitions/handlers.ErrorResponse"
-            }
-          }
-        }
-      }
+    "swagger": "2.0",
+    "info": {
+        "description": "This is scheduler management API server. Use this API to manage jobs.",
+        "title": "Scheduler management API",
+        "contact": {},
+        "version": "1.0"
     },
-    "/jobs/{id}": {
-      "get": {
-        "description": "Get a job with the given job ID",
-        "consumes": [
-          "application/json"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "jobs"
-        ],
-        "summary": "Get a job",
-        "parameters": [
-          {
-            "type": "string",
-            "description": "Job ID",
-            "name": "id",
-            "in": "path",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/model.Job"
+    "host": "http://localhost:8000",
+    "basePath": "/v1",
+    "paths": {
+        "/jobs": {
+            "get": {
+                "description": "List jobs with the given limit and offset",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "jobs"
+                ],
+                "summary": "List jobs",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.Job"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create a job with the given job create request",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "jobs"
+                ],
+                "summary": "Create a job",
+                "parameters": [
+                    {
+                        "description": "Job Create",
+                        "name": "job",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.JobCreate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/model.Job"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    }
+                }
             }
-          },
-          "400": {
-            "description": "Bad Request",
-            "schema": {
-              "$ref": "#/definitions/handlers.ErrorResponse"
+        },
+        "/jobs/{id}": {
+            "get": {
+                "description": "Get a job with the given job ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "jobs"
+                ],
+                "summary": "Get a job",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Job ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Job"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update a job with the given job update request",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "jobs"
+                ],
+                "summary": "Update a job",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Job ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Job Update",
+                        "name": "job",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.JobUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Job"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete a job with the given job ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "jobs"
+                ],
+                "summary": "Delete a job",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Job ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    }
+                }
             }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "schema": {
-              "$ref": "#/definitions/handlers.ErrorResponse"
+        },
+        "/jobs/{id}/executions": {
+            "get": {
+                "description": "Get job executions with the given job ID, failed only flag, limit and offset",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "jobs"
+                ],
+                "summary": "Get job executions",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Job ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Failed Only",
+                        "name": "failedOnly",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.JobExecution"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    }
+                }
             }
-          }
         }
-      },
-      "put": {
-        "description": "Update a job with the given job update request",
-        "consumes": [
-          "application/json"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "jobs"
-        ],
-        "summary": "Update a job",
-        "parameters": [
-          {
-            "type": "string",
-            "description": "Job ID",
-            "name": "id",
-            "in": "path",
-            "required": true
-          },
-          {
-            "description": "Job Update",
-            "name": "job",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/model.JobUpdate"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "$ref": "#/definitions/model.Job"
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "schema": {
-              "$ref": "#/definitions/handlers.ErrorResponse"
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "schema": {
-              "$ref": "#/definitions/handlers.ErrorResponse"
-            }
-          }
-        }
-      },
-      "delete": {
-        "description": "Delete a job with the given job ID",
-        "consumes": [
-          "application/json"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "jobs"
-        ],
-        "summary": "Delete a job",
-        "parameters": [
-          {
-            "type": "string",
-            "description": "Job ID",
-            "name": "id",
-            "in": "path",
-            "required": true
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "No Content"
-          },
-          "400": {
-            "description": "Bad Request",
-            "schema": {
-              "$ref": "#/definitions/handlers.ErrorResponse"
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "schema": {
-              "$ref": "#/definitions/handlers.ErrorResponse"
-            }
-          }
-        }
-      }
     },
-    "/jobs/{id}/executions": {
-      "get": {
-        "description": "Get job executions with the given job ID, failed only flag, limit and offset",
-        "consumes": [
-          "application/json"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "jobs"
-        ],
-        "summary": "Get job executions",
-        "parameters": [
-          {
+    "definitions": {
+        "handlers.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.AMQPJob": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "description": "e.g., \"Hello, world!\"",
+                    "type": "string"
+                },
+                "body_encoding": {
+                    "description": "e.g., \"none\", \"base64\", \"protojson\"",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/model.BodyEncoding"
+                        }
+                    ]
+                },
+                "connection": {
+                    "description": "e.g., \"amqp://guest:guest@localhost:5672/\"",
+                    "type": "string"
+                },
+                "content_type": {
+                    "description": "e.g., \"text/plain\"",
+                    "type": "string"
+                },
+                "exchange": {
+                    "description": "e.g., \"my_exchange\"",
+                    "type": "string"
+                },
+                "headers": {
+                    "description": "e.g., {\"x-delay\": 10000}",
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "routing_key": {
+                    "description": "e.g., \"my_routing_key\"",
+                    "type": "string"
+                }
+            }
+        },
+        "model.Auth": {
+            "type": "object",
+            "properties": {
+                "bearer_token": {
+                    "description": "for \"bearer\"",
+                    "type": "string"
+                },
+                "password": {
+                    "description": "for \"basic\"",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "e.g., \"none\", \"basic\", \"bearer\"",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/model.AuthType"
+                        }
+                    ]
+                },
+                "username": {
+                    "description": "for \"basic\"",
+                    "type": "string"
+                }
+            }
+        },
+        "model.AuthType": {
             "type": "string",
-            "description": "Job ID",
-            "name": "id",
-            "in": "path",
-            "required": true
-          },
-          {
-            "type": "boolean",
-            "description": "Failed Only",
-            "name": "failedOnly",
-            "in": "query"
-          },
-          {
-            "type": "integer",
-            "description": "Limit",
-            "name": "limit",
-            "in": "query"
-          },
-          {
-            "type": "integer",
-            "description": "Offset",
-            "name": "offset",
-            "in": "query"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/model.JobExecution"
-              }
+            "enum": [
+                "none",
+                "basic",
+                "bearer"
+            ],
+            "x-enum-varnames": [
+                "AuthTypeNone",
+                "AuthTypeBasic",
+                "AuthTypeBearer"
+            ]
+        },
+        "model.BodyEncoding": {
+            "type": "string",
+            "enum": [
+                "base64"
+            ],
+            "x-enum-varnames": [
+                "BodyEncodingBase64"
+            ]
+        },
+        "model.HTTPJob": {
+            "type": "object",
+            "properties": {
+                "auth": {
+                    "description": "e.g., {\"type\": \"basic\", \"username\": \"foo\", \"password\": \"bar\"}",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/model.Auth"
+                        }
+                    ]
+                },
+                "body": {
+                    "description": "e.g., \"{\\\"hello\\\": \\\"world\\\"}\"",
+                    "type": "string"
+                },
+                "headers": {
+                    "description": "e.g., {\"Content-Type\": \"application/json\"}",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "method": {
+                    "description": "e.g., \"GET\", \"POST\", \"PUT\", \"PATCH\", \"DELETE\"",
+                    "type": "string"
+                },
+                "url": {
+                    "description": "e.g., \"https://example.com\"",
+                    "type": "string"
+                },
+                "valid_response_codes": {
+                    "description": "e.g., [200, 201, 202]",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
             }
-          },
-          "400": {
-            "description": "Bad Request",
-            "schema": {
-              "$ref": "#/definitions/handlers.ErrorResponse"
+        },
+        "model.Job": {
+            "type": "object",
+            "properties": {
+                "amqp_job": {
+                    "$ref": "#/definitions/model.AMQPJob"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "cron_schedule": {
+                    "description": "for recurring jobs",
+                    "type": "string"
+                },
+                "execute_at": {
+                    "description": "for one-off jobs",
+                    "type": "string"
+                },
+                "http_job": {
+                    "$ref": "#/definitions/model.HTTPJob"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "next_run": {
+                    "description": "when the job is scheduled to run next (can be null if the job is not scheduled to run again)",
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/model.JobStatus"
+                },
+                "type": {
+                    "$ref": "#/definitions/model.JobType"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
             }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "schema": {
-              "$ref": "#/definitions/handlers.ErrorResponse"
+        },
+        "model.JobCreate": {
+            "type": "object",
+            "properties": {
+                "amqp_job": {
+                    "$ref": "#/definitions/model.AMQPJob"
+                },
+                "cron_schedule": {
+                    "description": "for recurring jobs",
+                    "type": "string"
+                },
+                "execute_at": {
+                    "description": "ExecuteAt and CronSchedule are mutually exclusive.",
+                    "type": "string"
+                },
+                "http_job": {
+                    "description": "HTTPJob and AMQPJob are mutually exclusive.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/model.HTTPJob"
+                        }
+                    ]
+                },
+                "type": {
+                    "description": "Job type",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/model.JobType"
+                        }
+                    ]
+                }
             }
-          }
+        },
+        "model.JobExecution": {
+            "type": "object",
+            "properties": {
+                "end_time": {
+                    "type": "string"
+                },
+                "error_message": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "job_id": {
+                    "type": "string"
+                },
+                "start_time": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "model.JobStatus": {
+            "type": "string",
+            "enum": [
+                "RUNNING",
+                "STOPPED"
+            ],
+            "x-enum-varnames": [
+                "JobStatusRunning",
+                "JobStatusStopped"
+            ]
+        },
+        "model.JobType": {
+            "type": "string",
+            "enum": [
+                "HTTP",
+                "AMQP"
+            ],
+            "x-enum-varnames": [
+                "JobTypeHTTP",
+                "JobTypeAMQP"
+            ]
+        },
+        "model.JobUpdate": {
+            "type": "object",
+            "properties": {
+                "amqp": {
+                    "$ref": "#/definitions/model.AMQPJob"
+                },
+                "cron_schedule": {
+                    "type": "string"
+                },
+                "execute_at": {
+                    "type": "string"
+                },
+                "http": {
+                    "$ref": "#/definitions/model.HTTPJob"
+                },
+                "type": {
+                    "$ref": "#/definitions/model.JobType"
+                }
+            }
         }
-      }
     }
-  },
-  "definitions": {
-    "handlers.ErrorResponse": {
-      "type": "object",
-      "properties": {
-        "error": {
-          "type": "string"
-        }
-      }
-    },
-    "model.AMQPJob": {
-      "type": "object",
-      "properties": {
-        "body": {
-          "description": "e.g., \"Hello, world!\"",
-          "type": "string"
-        },
-        "connection": {
-          "description": "e.g., \"amqp://guest:guest@localhost:5672/\"",
-          "type": "string"
-        },
-        "content_type": {
-          "description": "e.g., \"text/plain\"",
-          "type": "string"
-        },
-        "exchange": {
-          "description": "e.g., \"my_exchange\"",
-          "type": "string"
-        },
-        "headers": {
-          "description": "e.g., {\"x-delay\": 10000}",
-          "type": "object",
-          "additionalProperties": {}
-        },
-        "routing_key": {
-          "description": "e.g., \"my_routing_key\"",
-          "type": "string"
-        }
-      }
-    },
-    "model.Auth": {
-      "type": "object",
-      "properties": {
-        "bearer_token": {
-          "description": "for \"bearer\"",
-          "type": "string"
-        },
-        "password": {
-          "description": "for \"basic\"",
-          "type": "string"
-        },
-        "type": {
-          "description": "e.g., \"none\", \"basic\", \"bearer\"",
-          "allOf": [
-            {
-              "$ref": "#/definitions/model.AuthType"
-            }
-          ]
-        },
-        "username": {
-          "description": "for \"basic\"",
-          "type": "string"
-        }
-      }
-    },
-    "model.AuthType": {
-      "type": "string",
-      "enum": [
-        "none",
-        "basic",
-        "bearer"
-      ],
-      "x-enum-varnames": [
-        "AuthTypeNone",
-        "AuthTypeBasic",
-        "AuthTypeBearer"
-      ]
-    },
-    "model.HTTPJob": {
-      "type": "object",
-      "properties": {
-        "auth": {
-          "description": "e.g., {\"type\": \"basic\", \"username\": \"foo\", \"password\": \"bar\"}",
-          "allOf": [
-            {
-              "$ref": "#/definitions/model.Auth"
-            }
-          ]
-        },
-        "body": {
-          "description": "e.g., \"{\\\"hello\\\": \\\"world\\\"}\"",
-          "type": "string"
-        },
-        "headers": {
-          "description": "e.g., {\"Content-Type\": \"application/json\"}",
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          }
-        },
-        "method": {
-          "description": "e.g., \"GET\", \"POST\", \"PUT\", \"PATCH\", \"DELETE\"",
-          "type": "string"
-        },
-        "url": {
-          "description": "e.g., \"https://example.com\"",
-          "type": "string"
-        },
-        "valid_response_codes": {
-          "description": "e.g., [200, 201, 202]",
-          "type": "array",
-          "items": {
-            "type": "integer"
-          }
-        }
-      }
-    },
-    "model.Job": {
-      "type": "object",
-      "properties": {
-        "amqp_job": {
-          "$ref": "#/definitions/model.AMQPJob"
-        },
-        "created_at": {
-          "type": "string"
-        },
-        "cron_schedule": {
-          "description": "for recurring jobs",
-          "type": "string"
-        },
-        "execute_at": {
-          "description": "for one-off jobs",
-          "type": "string"
-        },
-        "http_job": {
-          "$ref": "#/definitions/model.HTTPJob"
-        },
-        "id": {
-          "type": "string"
-        },
-        "next_run": {
-          "description": "when the job is scheduled to run next (can be null if the job is not scheduled to run again)",
-          "type": "string"
-        },
-        "status": {
-          "$ref": "#/definitions/model.JobStatus"
-        },
-        "type": {
-          "$ref": "#/definitions/model.JobType"
-        },
-        "updated_at": {
-          "type": "string"
-        }
-      }
-    },
-    "model.JobCreate": {
-      "type": "object",
-      "properties": {
-        "amqp_job": {
-          "$ref": "#/definitions/model.AMQPJob"
-        },
-        "cron_schedule": {
-          "description": "for recurring jobs",
-          "type": "string"
-        },
-        "execute_at": {
-          "description": "ExecuteAt and CronSchedule are mutually exclusive.",
-          "type": "string"
-        },
-        "http_job": {
-          "description": "HTTPJob and AMQPJob are mutually exclusive.",
-          "allOf": [
-            {
-              "$ref": "#/definitions/model.HTTPJob"
-            }
-          ]
-        },
-        "type": {
-          "description": "Job type",
-          "allOf": [
-            {
-              "$ref": "#/definitions/model.JobType"
-            }
-          ]
-        }
-      }
-    },
-    "model.JobExecution": {
-      "type": "object",
-      "properties": {
-        "end_time": {
-          "type": "string"
-        },
-        "error_message": {
-          "type": "string"
-        },
-        "id": {
-          "type": "integer"
-        },
-        "job_id": {
-          "type": "string"
-        },
-        "start_time": {
-          "type": "string"
-        },
-        "success": {
-          "type": "boolean"
-        }
-      }
-    },
-    "model.JobStatus": {
-      "type": "string",
-      "enum": [
-        "RUNNING",
-        "STOPPED"
-      ],
-      "x-enum-varnames": [
-        "JobStatusRunning",
-        "JobStatusStopped"
-      ]
-    },
-    "model.JobType": {
-      "type": "string",
-      "enum": [
-        "HTTP",
-        "AMQP"
-      ],
-      "x-enum-varnames": [
-        "JobTypeHTTP",
-        "JobTypeAMQP"
-      ]
-    },
-    "model.JobUpdate": {
-      "type": "object",
-      "properties": {
-        "amqp": {
-          "$ref": "#/definitions/model.AMQPJob"
-        },
-        "cron_schedule": {
-          "type": "string"
-        },
-        "execute_at": {
-          "type": "string"
-        },
-        "http": {
-          "$ref": "#/definitions/model.HTTPJob"
-        },
-        "type": {
-          "$ref": "#/definitions/model.JobType"
-        }
-      }
-    }
-  }
 }

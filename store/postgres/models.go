@@ -43,6 +43,7 @@ func toJobDB(j *model.Job) (*jobDB, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to marshal http job")
 		}
+
 		dbJ.HTTPJob = httpJob
 	}
 
