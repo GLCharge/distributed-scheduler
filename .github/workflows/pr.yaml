@@ -1,4 +1,4 @@
-name: "Pull Request"
+name: "Build and Push to ECR"
 on:
   push:
     branches:
@@ -40,7 +40,7 @@ jobs:
       - name: Tag with latest
         if: github.ref == 'refs/heads/main'
         run: |
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:runner-latest
+          docker image tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:runner-latest
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
   BuildAndPushManagementImageToECR:
@@ -76,5 +76,5 @@ jobs:
       - name: Tag with latest
         if: github.ref == 'refs/heads/main'
         run: |
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:manager-latest
+          docker image tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:manager-latest
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
