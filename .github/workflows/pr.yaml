@@ -10,14 +10,12 @@ on:
     types: [ opened, synchronize, reopened ]
 
 jobs:
+
   build-and-push-runner:
     name: "Build and Push the Runner to ECR"
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
-
       - name: Configure AWS Credentials
         id: aws-config
         uses: aws-actions/configure-aws-credentials@v1
@@ -49,13 +47,13 @@ jobs:
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v4
+        if: github.event_name != 'pull_request'
         env:
           ECR_REPOSITORY: "distributed-scheduler"
         with:
           images: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}
           flavor: |
             prefix=runner-
-            latest=auto
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -68,23 +66,18 @@ jobs:
         id: build-and-push
         uses: docker/build-push-action@v4
         with:
-          context: .
-          file: ./build/runner/Dockerfile
+          file: ./build/manager/Dockerfile
           push: ${{ github.event_name != 'pull_request' }} # Don't push on PR
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
 
-
   build-and-push-manager:
     name: "Build and Push the Manager to ECR"
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
-
       - name: Configure AWS Credentials
         id: aws-config
         uses: aws-actions/configure-aws-credentials@v1
@@ -116,13 +109,13 @@ jobs:
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v4
+        if: github.event_name != 'pull_request'
         env:
           ECR_REPOSITORY: "distributed-scheduler"
         with:
           images: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}
           flavor: |
             prefix=manager-
-            latest=auto
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -135,8 +128,7 @@ jobs:
         id: build-and-push
         uses: docker/build-push-action@v4
         with:
-          context: .
-          file: ./build/runner/Dockerfile
+          file: ./build/manager/Dockerfile
           push: ${{ github.event_name != 'pull_request' }} # Don't push on PR
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
