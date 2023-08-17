@@ -54,7 +54,7 @@ jobs:
         with:
           images: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}
           flavor: |
-            prefix=runner
+            prefix=runner-
             latest=auto
           tags: |
             type=ref,event=branch
@@ -121,7 +121,7 @@ jobs:
         with:
           images: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}
           flavor: |
-            prefix=manager
+            prefix=manager-
             latest=auto
           tags: |
             type=ref,event=branch
