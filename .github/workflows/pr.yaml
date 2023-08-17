@@ -4,11 +4,14 @@ on:
     branches:
       - main
       - staging
+    tags:
+      - 'v*'
   pull_request:
+    types: [ opened, synchronize, reopened ]
 
 jobs:
-  BuildAndPushRunnerImageToECR:
-    name: "Build and Push the Runner Image to ECR"
+  build-and-push-runner:
+    name: "Build and Push the Runner to ECR"
     runs-on: ubuntu-latest
 
     steps:
@@ -16,34 +19,65 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Configure AWS Credentials
+        id: aws-config
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-central-1
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Cache Docker layers
+        uses: actions/cache@v3.0.1
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
 
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
+        if: github.event_name != 'pull_request'
+        with:
+          registries: ${{ steps.aws-config.outputs.aws-account-id }}
 
-      - name: Build, tag, and push image to Amazon ECR 🏷
-        id: build-image
+      # Extract metadata (tags, labels) for Docker
+      # https://github.com/docker/metadata-action
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v4
         env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: "distributed-scheduler"
-          IMAGE_TAG: runner-${{ github.sha }}
-        run: |
-          docker build -f build/runner/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+        with:
+          images: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}
+          flavor: |
+            prefix=runner
+            latest: auto
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}  
 
-      - name: Tag with latest
-        if: github.ref == 'refs/heads/main'
-        run: |
-          docker image tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:runner-latest
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+      # Build and push Docker image with Buildx (don't push on PR)
+      # https://github.com/docker/build-push-action
+      - name: Build and push Docker image
+        id: build-and-push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./build/runner/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }} # Don't push on PR
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache
 
-  BuildAndPushManagementImageToECR:
+
+  build-and-push-manager:
     name: "Build and Push the Manager to ECR"
     runs-on: ubuntu-latest
 
@@ -52,29 +86,59 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Configure AWS Credentials
+        id: aws-config
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-central-1
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Cache Docker layers
+        uses: actions/cache@v3.0.1
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
 
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
+        if: github.event_name != 'pull_request'
+        with:
+          registries: ${{ steps.aws-config.outputs.aws-account-id }}
 
-      - name: Build, tag, and push image to Amazon ECR 🏷
-        id: build-image
+      # Extract metadata (tags, labels) for Docker
+      # https://github.com/docker/metadata-action
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v4
         env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: "distributed-scheduler"
-          IMAGE_TAG: manager-${{ github.sha }}
-        run: |
-          docker build -f build/manager/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+        with:
+          images: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}
+          flavor: |
+            prefix=manager
+            latest: auto
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}  
 
-      - name: Tag with latest
-        if: github.ref == 'refs/heads/main'
-        run: |
-          docker image tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:manager-latest
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+      # Build and push Docker image with Buildx (don't push on PR)
+      # https://github.com/docker/build-push-action
+      - name: Build and push Docker image
+        id: build-and-push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./build/runner/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }} # Don't push on PR
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache
