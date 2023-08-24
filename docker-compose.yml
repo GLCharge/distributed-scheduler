@@ -3,11 +3,13 @@ version: '3'
 services:
 
   migration:
+    depends_on:
+      - postgres
     build:
       context: .
       dockerfile: build/manager/Dockerfile
     command:
-      - "/app/migrate"
+      - "/app/tooling"
       - "migrate"
       - "--user=scheduler"
       - "--host=postgres:5432"

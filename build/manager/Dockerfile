@@ -25,7 +25,7 @@ RUN swag init -g handlers/doc.go
 RUN go build -o bin/manager cmd/manager/main.go
 
 # Build the migration tool
-RUN go build -o bin/migrate cmd/tooling/main.go
+RUN go build -o bin/tooling cmd/tooling/main.go
 
 # Use an official Alpine Linux runtime as a base image
 FROM alpine:latest
@@ -35,7 +35,7 @@ WORKDIR /app
 
 # Copy the binary from the builder stage to the current stage
 COPY --from=builder /app/bin/manager /app/manager
-COPY --from=builder /app/bin/migrate /app/migrate
+COPY --from=builder /app/bin/tooling /app/tooling
 
 # set command to run when starting the container
 CMD ["/app/manager"]
