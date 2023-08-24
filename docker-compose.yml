@@ -1,6 +1,21 @@
 version: '3'
 
 services:
+
+  migration:
+    depends_on:
+      - postgres
+    build:
+      context: .
+      dockerfile: build/manager/Dockerfile
+    command:
+      - "/app/tooling"
+      - "migrate"
+      - "--user=scheduler"
+      - "--host=postgres:5432"
+      - "--pass=scheduler"
+      - "--name=scheduler"
+
   manager:
     build:
       context: .
@@ -13,6 +28,13 @@ services:
       - MANAGER_DB_HOST=postgres:5432
     depends_on:
       - postgres
+      - migration
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
   runner:
     build:
       context: .
@@ -23,6 +45,8 @@ services:
       - RUNNER_DB_HOST=postgres:5432
     depends_on:
       - postgres
+      - migration
+
   postgres:
     image: postgres:15
     restart: always
@@ -32,6 +56,7 @@ services:
       POSTGRES_DB: scheduler
     volumes:
       - pgdata:/var/lib/postgresql/data
+
   rabbitmq:
     image: rabbitmq:3-management
     hostname: rabbitmq
