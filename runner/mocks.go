@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/GLCharge/distributed-scheduler/executor"
 	"github.com/GLCharge/distributed-scheduler/model"
+	"github.com/GLCharge/otelzap"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"sync"
@@ -84,7 +85,7 @@ func createRunnerWithMockExecutor(interval time.Duration, maxConcurrentJobs int,
 	return New(Config{
 		JobService:        jobService,
 		ExecutorFactory:   executorFactory,
-		Log:               logger.Sugar(),
+		Log:               otelzap.New(logger),
 		InstanceId:        "test",
 		Interval:          interval,
 		MaxConcurrentJobs: maxConcurrentJobs,
