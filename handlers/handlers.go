@@ -2,19 +2,23 @@ package handlers
 
 import (
 	"context"
+	"github.com/GLCharge/otelzap"
+	ginzap "github.com/gin-contrib/zap"
+	timeout "github.com/vearne/gin-timeout"
+	"go.uber.org/zap"
 	"net/http"
+	"time"
 
 	"github.com/GLCharge/distributed-scheduler/foundation/database"
 	"github.com/GLCharge/distributed-scheduler/service/job"
 	"github.com/GLCharge/distributed-scheduler/store/postgres"
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
-	"go.uber.org/zap"
 )
 
 // APIMuxConfig contains all the mandatory systems required by handlers.
 type APIMuxConfig struct {
-	Log     *zap.SugaredLogger
+	Log     *otelzap.Logger
 	DB      *sqlx.DB
 	OpenApi OpenApiConfig
 }
@@ -26,8 +30,11 @@ func APIMux(cfg APIMuxConfig) http.Handler {
 	router := gin.New()
 
 	// Use Gin's built-in logger and recovery middleware
-	router.Use(gin.Logger())
-	router.Use(gin.Recovery())
+	router.Use(
+		ginzap.RecoveryWithZap(cfg.Log, true),
+		ginzap.Ginzap(cfg.Log, time.RFC3339, true),
+		timeout.Timeout(timeout.WithErrorHttpCode(http.StatusServiceUnavailable)),
+	)
 
 	// ==================
 	// Health Check
@@ -65,7 +72,7 @@ func healthCheck(cfg APIMuxConfig) gin.HandlerFunc {
 
 		// Check the database connection
 		if err := database.StatusCheck(context.Background(), cfg.DB); err != nil {
-			cfg.Log.Errorw("database status check failed", "error", err)
+			cfg.Log.Error("database status check failed", zap.Error(err))
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"status": "database ping failed",
 			})
