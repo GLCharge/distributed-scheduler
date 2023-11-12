@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/GLCharge/otelzap"
 	"net/http"
 	"os"
 	"os/signal"
@@ -20,7 +21,8 @@ import (
 var build = "develop"
 
 func main() {
-	log, err := logger.New("MANAGER")
+	logLevel := os.Getenv("MANAGER_LOG_LEVEL")
+	log, err := logger.New(logLevel)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -28,13 +30,13 @@ func main() {
 	defer log.Sync()
 
 	if err := run(log); err != nil {
-		log.Errorw("startup", "ERROR", err)
+		log.Error("startup error", zap.Error(err))
 		log.Sync()
 		os.Exit(1)
 	}
 }
 
-func run(log *zap.SugaredLogger) error {
+func run(log *otelzap.Logger) error {
 
 	// -------------------------------------------------------------------------
 	// Configuration
@@ -81,19 +83,19 @@ func run(log *zap.SugaredLogger) error {
 	// -------------------------------------------------------------------------
 	// App Starting
 
-	log.Infow("starting service", "version", build)
-	defer log.Infow("shutdown complete")
+	log.Info("starting service", zap.String("version", build))
+	defer log.Info("shutdown complete")
 
 	out, err := conf.String(&cfg)
 	if err != nil {
 		return fmt.Errorf("generating config for output: %w", err)
 	}
-	log.Infow("startup", "config", out)
+	log.Info("startup", zap.String("config", out))
 
 	// -------------------------------------------------------------------------
 	// Database Support
 
-	log.Infow("startup", "status", "initializing database support", "host", cfg.DB.Host)
+	log.Info("startup", zap.String("status", "initializing database support"), zap.String("host", cfg.DB.Host))
 
 	db, err := database.Open(database.Config{
 		User:         cfg.DB.User,
@@ -109,14 +111,14 @@ func run(log *zap.SugaredLogger) error {
 	}
 
 	defer func() {
-		log.Infow("shutdown", "status", "stopping database support", "host", cfg.DB.Host)
+		log.Info("shutdown", zap.String("status", "stopping database support"), zap.String("host", cfg.DB.Host))
 		db.Close()
 	}()
 
 	// -------------------------------------------------------------------------
 	// Start API Service
 
-	log.Infow("startup", "status", "initializing Management API support")
+	log.Info("startup", zap.String("status", "initializing Management API support"))
 
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
@@ -137,13 +139,13 @@ func run(log *zap.SugaredLogger) error {
 		ReadTimeout:  cfg.Web.ReadTimeout,
 		WriteTimeout: cfg.Web.WriteTimeout,
 		IdleTimeout:  cfg.Web.IdleTimeout,
-		ErrorLog:     zap.NewStdLog(log.Desugar()),
+		ErrorLog:     zap.NewStdLog(log.Logger),
 	}
 
 	serverErrors := make(chan error, 1)
 
 	go func() {
-		log.Infow("startup", "status", "api router started", "host", api.Addr)
+		log.Info("startup", zap.String("status", "api router started"), zap.String("host", api.Addr))
 		serverErrors <- api.ListenAndServe()
 	}()
 
@@ -154,8 +156,8 @@ func run(log *zap.SugaredLogger) error {
 	case err := <-serverErrors:
 		return fmt.Errorf("server error: %w", err)
 	case sig := <-shutdown:
-		log.Infow("shutdown", "status", "shutdown started", "signal", sig)
-		defer log.Infow("shutdown", "status", "shutdown complete", "signal", sig)
+		log.Info("shutdown", zap.String("status", "shutdown started"), zap.Any("signal", sig))
+		defer log.Info("shutdown", zap.String("status", "shutdown complete"), zap.Any("signal", sig))
 
 		ctx, cancel := context.WithTimeout(context.Background(), cfg.Web.ShutdownTimeout)
 		defer cancel()

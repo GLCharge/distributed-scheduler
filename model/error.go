@@ -23,6 +23,7 @@ var (
 	ErrAuthMethodNotDefined = errors.New("auth method must be defined")
 	ErrJobNotFound          = errors.New("job not found")
 	ErrInvalidResponseCode  = errors.New("invalid response code")
+	ErrInvalidBodyEncoding  = errors.New("invalid body encoding")
 )
 
 type CustomError struct {

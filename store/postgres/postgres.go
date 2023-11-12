@@ -4,10 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/GLCharge/otelzap"
 	"gopkg.in/guregu/null.v4"
 	"time"
-
-	"go.uber.org/zap"
 
 	"github.com/GLCharge/distributed-scheduler/model"
 	"github.com/GLCharge/distributed-scheduler/store"
@@ -17,11 +16,11 @@ import (
 
 type pgStore struct {
 	db  *sqlx.DB
-	log *zap.SugaredLogger
+	log *otelzap.Logger
 }
 
 // New creates a new PostgresSQL store.
-func New(db *sqlx.DB, log *zap.SugaredLogger) store.Storer {
+func New(db *sqlx.DB, log *otelzap.Logger) store.Storer {
 	return &pgStore{
 		db:  db,
 		log: log,

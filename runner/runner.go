@@ -2,12 +2,13 @@ package runner
 
 import (
 	"context"
+	"github.com/GLCharge/otelzap"
+	"go.uber.org/zap"
 	"sync"
 	"time"
 
 	"github.com/GLCharge/distributed-scheduler/executor"
 	"github.com/GLCharge/distributed-scheduler/model"
-	"go.uber.org/zap"
 )
 
 type Runner struct {
@@ -15,7 +16,7 @@ type Runner struct {
 
 	executorFactory executor.Factory
 	ticker          *time.Ticker
-	log             *zap.SugaredLogger
+	log             *otelzap.Logger
 
 	// Add an instance ID to identify the runner
 	instanceId string
@@ -51,7 +52,7 @@ type JobService interface {
 type Config struct {
 	JobService      JobService
 	ExecutorFactory executor.Factory
-	Log             *zap.SugaredLogger
+	Log             *otelzap.Logger
 	InstanceId      string
 
 	Interval          time.Duration
@@ -135,7 +136,7 @@ func (s *Runner) Stop(ctx context.Context) {
 	select {
 	case <-c:
 		// The runner stopped
-		s.log.Infow("Runner stopped")
+		s.log.Info("Runner stopped")
 
 	case <-ctx.Done():
 		// Timeout
@@ -154,11 +155,11 @@ func (s *Runner) runJobs() {
 	jobs, err := s.jobService.GetJobsToRun(ctx, now, now.Add(s.jobLockDuration), s.instanceId, uint(s.maxConcurrentJobs))
 	if err != nil {
 		// Log the error and return
-		s.log.Errorw("Failed to get jobs to run", err)
+		s.log.Error("Failed to get jobs to run", zap.Error(err))
 		return
 	}
 
-	s.log.Debugw("Running jobs", "count", len(jobs))
+	s.log.Debug("Running jobs", zap.Int("count", len(jobs)))
 
 	// Run each job
 	for _, j := range jobs {
@@ -175,12 +176,12 @@ func (s *Runner) executeJob(job *model.Job) {
 		defer s.wg.Done()                   // Decrement the wait group counter
 		defer func() { <-s.jobSemaphore }() // Release the semaphore slot
 
-		s.log.Debugw("Executing job", "jobID", job.ID)
+		s.log.Debug("Executing job", zap.Any("jobID", job.ID))
 
 		// Create a new executor for the job with retry enabled
 		jobExecutor, err := s.executorFactory.NewExecutor(job, executor.WithRetry)
 		if err != nil {
-			s.log.Errorw("Failed to create job executor", "jobID", job.ID, "error", err)
+			s.log.Error("Failed to create job executor", zap.Any("jobID", job.ID), zap.Error(err))
 			return
 		}
 
@@ -194,9 +195,9 @@ func (s *Runner) executeJob(job *model.Job) {
 		// Report the job as finished
 		err = s.jobService.FinishJobExecution(s.ctx, job, startTime, stopTime, err)
 		if err != nil {
-			s.log.Errorw("Failed to report job as finished", "jobID", job.ID, "error", err)
+			s.log.Error("Failed to report job as finished", zap.Any("jobID", job.ID), zap.Error(err))
 		}
 
-		s.log.Debugw("Job finished", "jobID", job.ID)
+		s.log.Debug("Job finished", zap.Any("jobID", job.ID))
 	}()
 }
