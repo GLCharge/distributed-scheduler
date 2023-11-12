@@ -322,7 +322,7 @@
                     "type": "string"
                 },
                 "body_encoding": {
-                    "description": "e.g., null, \"base64\"",
+                    "description": "e.g., \"none\", \"base64\", \"protojson\"",
                     "allOf": [
                         {
                             "$ref": "#/definitions/model.BodyEncoding"
