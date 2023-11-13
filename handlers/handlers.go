@@ -65,6 +65,27 @@ func APIMux(cfg APIMuxConfig) http.Handler {
 	return router
 }
 
+// Runner API
+func RunnerAPI(cfg APIMuxConfig) http.Handler {
+	// Create a new Gin router
+	router := gin.New()
+
+	// Use Gin's built-in logger and recovery middleware
+	router.Use(
+		ginzap.RecoveryWithZap(cfg.Log, true),
+		ginzap.Ginzap(cfg.Log, time.RFC3339, true),
+		timeout.Timeout(timeout.WithErrorHttpCode(http.StatusServiceUnavailable)),
+	)
+
+	// ==================
+	// Health Check
+
+	// Define a route for the health check endpoint
+	router.GET("/health", healthCheck(cfg))
+
+	return router
+}
+
 // healthCheck returns a Gin handler function for the health check endpoint
 func healthCheck(cfg APIMuxConfig) gin.HandlerFunc {
 
