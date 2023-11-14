@@ -13,7 +13,7 @@ definitions:
       body_encoding:
         allOf:
         - $ref: '#/definitions/model.BodyEncoding'
-        description: e.g., "none", "base64", "protojson"
+        description: e.g., null, "base64"
       connection:
         description: e.g., "amqp://guest:guest@localhost:5672/"
         type: string

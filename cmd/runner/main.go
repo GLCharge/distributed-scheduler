@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/GLCharge/distributed-scheduler/handlers"
 	"github.com/GLCharge/otelzap"
 	"net/http"
 	"os"
@@ -46,6 +47,13 @@ func run(log *otelzap.Logger) error {
 
 	cfg := struct {
 		conf.Version
+		Web struct {
+			ReadTimeout     time.Duration `conf:"default:5s"`
+			WriteTimeout    time.Duration `conf:"default:10s"`
+			IdleTimeout     time.Duration `conf:"default:120s"`
+			ShutdownTimeout time.Duration `conf:"default:20s"`
+			APIHost         string        `conf:"default:0.0.0.0:8000"`
+		}
 		DB struct {
 			User         string `conf:"default:scheduler"`
 			Password     string `conf:"default:scheduler,mask"`
@@ -135,6 +143,29 @@ func run(log *otelzap.Logger) error {
 	})
 
 	runnner.Start()
+
+	//
+	// API
+	apiMux := handlers.RunnerAPI(handlers.APIMuxConfig{
+		Log: log,
+		DB:  db,
+	})
+
+	api := http.Server{
+		Addr:         cfg.Web.APIHost,
+		Handler:      apiMux,
+		ReadTimeout:  cfg.Web.ReadTimeout,
+		WriteTimeout: cfg.Web.WriteTimeout,
+		IdleTimeout:  cfg.Web.IdleTimeout,
+		ErrorLog:     zap.NewStdLog(log.Logger),
+	}
+
+	serverErrors := make(chan error, 1)
+
+	go func() {
+		log.Info("startup", zap.String("status", "api router started"), zap.String("host", api.Addr))
+		serverErrors <- api.ListenAndServe()
+	}()
 
 	// -------------------------------------------------------------------------
 	// Shutdown
