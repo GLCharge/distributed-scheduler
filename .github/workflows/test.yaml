@@ -5,6 +5,12 @@ on:
     branches:
       - main
       - staging
+    paths-ignore:
+      - 'docs/**'
+      - 'documentation/**'
+      - '*.md'
+      - 'docker-compose.yaml'
+      - 'docker-compose.dev.yaml'
   pull_request:
     branches:
       - main
