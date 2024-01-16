@@ -6,7 +6,6 @@ on:
       - main
       - staging
     paths-ignore:
-      - 'docs/**'
       - 'documentation/**'
       - '*.md'
       - 'docker-compose.yaml'
@@ -17,17 +16,17 @@ on:
       - staging
 
 jobs:
-  build:
+  test:
     name: Run Go Unit Tests
     runs-on: ubuntu-latest
     steps:
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v4
         with:
           go-version: 1.20
 
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Get dependencies
         run: go mod download
