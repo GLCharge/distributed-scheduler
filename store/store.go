@@ -14,7 +14,7 @@ type Storer interface {
 	CreateJob(ctx context.Context, job *model.Job) error
 	GetJob(ctx context.Context, id uuid.UUID) (*model.Job, error)
 	DeleteJob(ctx context.Context, id uuid.UUID) error
-	ListJobs(ctx context.Context, limit, offset uint64) ([]*model.Job, error)
+	ListJobs(ctx context.Context, limit, offset uint64, tags []string) ([]model.Job, error)
 	UpdateJob(ctx context.Context, job *model.Job) error
 
 	// Get jobs to run

@@ -6,27 +6,28 @@ import (
 
 	"github.com/GLCharge/distributed-scheduler/model"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"github.com/pkg/errors"
 	"gopkg.in/guregu/null.v4"
 )
 
 type jobDB struct {
-	ID           uuid.UUID   `db:"id"`
-	Type         string      `db:"type"`
-	Status       string      `db:"status"`
-	ExecuteAt    null.Time   `db:"execute_at"`
-	CronSchedule null.String `db:"cron_schedule"`
-	HTTPJob      []byte      `db:"http_job"`
-	AMQPJob      []byte      `db:"amqp_job"`
-	CreatedAt    time.Time   `db:"created_at"`
-	UpdatedAt    time.Time   `db:"updated_at"`
-	NextRun      null.Time   `db:"next_run"`
-	LockedUntil  null.Time   `db:"locked_until"`
-	LockedBy     null.String `db:"locked_by"`
+	ID           uuid.UUID      `db:"id"`
+	Type         string         `db:"type"`
+	Status       string         `db:"status"`
+	ExecuteAt    null.Time      `db:"execute_at"`
+	CronSchedule null.String    `db:"cron_schedule"`
+	HTTPJob      []byte         `db:"http_job"`
+	AMQPJob      []byte         `db:"amqp_job"`
+	CreatedAt    time.Time      `db:"created_at"`
+	UpdatedAt    time.Time      `db:"updated_at"`
+	NextRun      null.Time      `db:"next_run"`
+	LockedUntil  null.Time      `db:"locked_until"`
+	LockedBy     null.String    `db:"locked_by"`
+	Tags         pq.StringArray `db:"tags"`
 }
 
 func toJobDB(j *model.Job) (*jobDB, error) {
-
 	dbJ := &jobDB{
 		ID:           j.ID,
 		Type:         string(j.Type),
@@ -36,6 +37,7 @@ func toJobDB(j *model.Job) (*jobDB, error) {
 		CreatedAt:    j.CreatedAt,
 		UpdatedAt:    j.UpdatedAt,
 		NextRun:      j.NextRun,
+		Tags:         j.Tags,
 	}
 
 	if j.HTTPJob != nil {
@@ -67,6 +69,7 @@ func (j *jobDB) ToJob() (*model.Job, error) {
 		CreatedAt:    j.CreatedAt,
 		UpdatedAt:    j.UpdatedAt,
 		NextRun:      j.NextRun,
+		Tags:         j.Tags,
 	}
 
 	if err := unmarshalNullableJSON(j.HTTPJob, &job.HTTPJob); err != nil {
@@ -98,7 +101,6 @@ type executionDB struct {
 }
 
 func (e *executionDB) ToModel() *model.JobExecution {
-
 	return &model.JobExecution{
 		ID:           e.ID,
 		JobID:        e.JobID,

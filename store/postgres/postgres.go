@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"gopkg.in/guregu/null.v4"
 	"time"
@@ -99,29 +100,31 @@ func (s *pgStore) CreateJob(ctx context.Context, job *model.Job) error {
 
 	// insert job struct into database
 	query := `
-	 INSERT INTO jobs (
-		 id,
-		 type,
-		 status,
-		 execute_at,
-		 cron_schedule,
-		 http_job,
-		 amqp_job,
-		 created_at,
-		 updated_at,
-		 next_run
-	 ) VALUES (
-		 :id,
-		 :type,
-		 :status,
-		 :execute_at,
-		 :cron_schedule,
-		 :http_job,
-		 :amqp_job,
-		 :created_at,
-		 :updated_at,
-		 :next_run
-	 )
+	INSERT INTO jobs (
+		id,
+	 	type,
+	 	status,
+	 	execute_at,
+	 	cron_schedule,
+	 	http_job,
+	 	amqp_job,
+	 	created_at,
+	 	updated_at,
+	 	next_run,
+	    tags
+	) VALUES (
+	 	:id,
+	 	:type,
+	 	:status,
+	 	:execute_at,
+	 	:cron_schedule,
+	 	:http_job,
+	 	:amqp_job,
+	 	:created_at,
+	 	:updated_at,
+	 	:next_run,
+    	:tags
+	)
  `
 
 	_, err = s.db.NamedExecContext(ctx, query, dbJob)
@@ -142,7 +145,7 @@ func (s *pgStore) GetJob(ctx context.Context, id uuid.UUID) (*model.Job, error) 
     `
 	err := s.db.GetContext(ctx, &dbJob, query, id)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, model.ErrJobNotFound
 		}
 		return nil, fmt.Errorf("failed to get job from database: %w", err)
@@ -170,25 +173,33 @@ func (s *pgStore) DeleteJob(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (s *pgStore) ListJobs(ctx context.Context, limit, offset uint64) ([]*model.Job, error) {
+func (s *pgStore) ListJobs(ctx context.Context, limit, offset uint64, tags []string) ([]model.Job, error) {
 	// get all jobs from database
+	args := []interface{}{limit, offset}
 	query := `
         SELECT * FROM jobs ORDER BY id DESC LIMIT $1 OFFSET $2 
     `
-	var dbJobs []*jobDB
-	err := s.db.SelectContext(ctx, &dbJobs, query, limit, offset)
+	if len(tags) > 0 {
+		args = append(args, tags)
+		query = `
+			SELECT * FROM jobs WHERE tags @> $3 ORDER BY id DESC LIMIT $1 OFFSET $2 
+		`
+	}
+
+	var dbJobs []jobDB
+	err := s.db.SelectContext(ctx, &dbJobs, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get jobs from database: %w", err)
 	}
 
 	// convert JobDB structs to Job structs
-	var jobs []*model.Job
+	jobs := []model.Job{}
 	for _, dbJob := range dbJobs {
 		job, err := dbJob.ToJob()
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert db job to job: %w", err)
 		}
-		jobs = append(jobs, job)
+		jobs = append(jobs, *job)
 	}
 
 	return jobs, nil
@@ -215,14 +226,14 @@ func (s *pgStore) GetJobsToRun(ctx context.Context, at time.Time, lockedUntil ti
 	}
 	defer rows.Close()
 
-	var dbjobs []*jobDB
-	err = sqlx.StructScan(rows, &dbjobs)
+	var dbJobs []*jobDB
+	err = sqlx.StructScan(rows, &dbJobs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to scan job: %w", err)
 	}
 
 	var jobs []*model.Job
-	for _, dbJob := range dbjobs {
+	for _, dbJob := range dbJobs {
 
 		job, err := dbJob.ToJob()
 		if err != nil {

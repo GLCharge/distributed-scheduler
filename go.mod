@@ -6,10 +6,12 @@ require (
 	github.com/ardanlabs/darwin/v3 v3.3.0
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/google/go-cmp v0.5.9
+	github.com/lib/pq v1.2.0
 	github.com/samber/lo v1.38.1
 	github.com/spf13/cobra v1.7.0
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.0
+	github.com/swaggo/swag v1.8.12
 )
 
 require (
@@ -25,7 +27,6 @@ require (
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/swaggo/swag v1.8.12 // indirect
 	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect
 	golang.org/x/tools v0.7.0 // indirect
 )
