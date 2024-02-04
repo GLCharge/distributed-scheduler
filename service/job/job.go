@@ -43,12 +43,11 @@ func (s *Service) CreateJob(ctx context.Context, jobCreate *model.JobCreate) (*m
 		return nil, err
 	}
 
-	return job, err
+	return job, nil
 }
 
 // GetJob returns the job with the given ID.
 func (s *Service) GetJob(ctx context.Context, id uuid.UUID) (*model.Job, error) {
-
 	return s.store.GetJob(ctx, id)
 }
 
@@ -85,10 +84,10 @@ func (s *Service) DeleteJob(ctx context.Context, id uuid.UUID) error {
 }
 
 // ListJobs returns a list of jobs with the given limit and offset.
-func (s *Service) ListJobs(ctx context.Context, limit, offset uint64) ([]*model.Job, error) {
+func (s *Service) ListJobs(ctx context.Context, limit, offset uint64, tags []string) ([]model.Job, error) {
 	// Implement listing jobs using the store
 
-	return s.store.ListJobs(ctx, limit, offset)
+	return s.store.ListJobs(ctx, limit, offset, tags)
 }
 
 // GetJobsToRun returns a list of jobs that should be run at the given time.

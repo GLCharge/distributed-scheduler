@@ -67,3 +67,7 @@ CREATE INDEX job_id_index ON job_executions (job_id);
 
 CREATE INDEX job_executions_start_time_index ON job_executions (start_time);
 
+-- Version: 1.02
+-- Description: Add tags column to jobs table
+
+ALTER TABLE jobs ADD tags TEXT[];
