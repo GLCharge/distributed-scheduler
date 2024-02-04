@@ -2,12 +2,14 @@ package executor
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
-	"github.com/GLCharge/distributed-scheduler/model"
-	amqp "github.com/rabbitmq/amqp091-go"
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/GLCharge/distributed-scheduler/model"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type hTTPExecutor struct {
@@ -133,6 +135,23 @@ func (ae *aMQPExecutor) Execute(ctx context.Context, j *model.Job) error {
 	}
 	defer ch.Close()
 
+	var body []byte
+
+	if j.AMQPJob.BodyEncoding != nil {
+		switch *j.AMQPJob.BodyEncoding {
+		case model.BodyEncodingBase64:
+			body, err = base64.StdEncoding.DecodeString(j.AMQPJob.Body)
+			if err != nil {
+				return fmt.Errorf("failed to decode body: %w", err)
+			}
+		default:
+			return model.ErrInvalidBodyEncoding
+		}
+
+	} else {
+		body = []byte(j.AMQPJob.Body)
+	}
+
 	// Publish a message to the exchange
 	err = ch.PublishWithContext(
 		ctx,
@@ -142,8 +161,8 @@ func (ae *aMQPExecutor) Execute(ctx context.Context, j *model.Job) error {
 		false,                // immediate
 		amqp.Publishing{
 			ContentType: j.AMQPJob.ContentType,
-			Body:        []byte(j.AMQPJob.Body),
 			Headers:     j.AMQPJob.Headers,
+			Body:        body,
 		},
 	)
 	if err != nil {

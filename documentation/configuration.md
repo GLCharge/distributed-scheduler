@@ -47,7 +47,7 @@ You can pass these flags directly when starting the Management API. For example:
 You can also use environment variables to configure the Management API. The environment variables are prefixed with `MANAGER_` and are uppercase. For example:
 
 ```bash
-MANAGER_WEB_READ_TIMEOUT=6s MANAGER_DB_USER=myuser ./manager
+MANAGER_LOG_LEVEL=info MANAGER_WEB_READ_TIMEOUT=6s MANAGER_DB_USER=myuser ./manager 
 ```
 
 
@@ -92,7 +92,7 @@ You can pass these flags directly when starting the Runner. For example:
 You can also use environment variables to configure the Runner. The environment variables are prefixed with `RUNNER_` and are uppercase. For example:
 
 ```bash
-RUNNER_INTERVAL=15s RUNNER_DB_USER=myuser ./runner
+RUNNER_LOG_LEVEL=info RUNNER_INTERVAL=15s RUNNER_DB_USER=myuser ./runner
 ```
 
 *Note*: Please remember to replace the `xxxxxx` with your database password before starting the services.

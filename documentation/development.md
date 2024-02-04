@@ -3,6 +3,7 @@ This guide will help you get the Management API and Runner services set up and r
 
 ### Prerequisites
 Ensure that you have Go 1.20 installed on your local machine. If you haven't, you can download it from the [official Go website](https://golang.org/dl/).
+Ensure you have Swag installed. [Install instructions](https://github.com/swaggo/swag?tab=readme-ov-file#getting-started)
 
 ### Build and Run
 The Management API and Runner services use make commands for building and running the application locally. Follow the steps below to start the services:

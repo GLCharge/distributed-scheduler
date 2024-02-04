@@ -2,23 +2,23 @@ package job
 
 import (
 	"context"
+	"github.com/GLCharge/otelzap"
 	"github.com/google/uuid"
 	"gopkg.in/guregu/null.v4"
 	"time"
 
 	"github.com/GLCharge/distributed-scheduler/model"
 	"github.com/GLCharge/distributed-scheduler/store"
-	"go.uber.org/zap"
 )
 
 // Service is a struct that contains a store and a logger.
 type Service struct {
 	store store.Storer
-	log   *zap.SugaredLogger
+	log   *otelzap.Logger
 }
 
 // NewService creates a new job service with the given store and logger.
-func NewService(store store.Storer, log *zap.SugaredLogger) *Service {
+func NewService(store store.Storer, log *otelzap.Logger) *Service {
 	return &Service{
 		store: store,
 		log:   log,
