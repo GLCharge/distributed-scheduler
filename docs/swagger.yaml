@@ -111,6 +111,10 @@ definitions:
         type: string
       status:
         $ref: '#/definitions/model.JobStatus'
+      tags:
+        items:
+          type: string
+        type: array
       type:
         $ref: '#/definitions/model.JobType'
       updated_at:
@@ -130,6 +134,10 @@ definitions:
         allOf:
         - $ref: '#/definitions/model.HTTPJob'
         description: HTTPJob and AMQPJob are mutually exclusive.
+      tags:
+        items:
+          type: string
+        type: array
       type:
         allOf:
         - $ref: '#/definitions/model.JobType'
@@ -176,6 +184,10 @@ definitions:
         type: string
       http:
         $ref: '#/definitions/model.HTTPJob'
+      tags:
+        items:
+          type: string
+        type: array
       type:
         $ref: '#/definitions/model.JobType'
     type: object
@@ -200,6 +212,10 @@ paths:
         in: query
         name: offset
         type: integer
+      - description: Tags
+        in: query
+        name: tags
+        type: array
       produces:
       - application/json
       responses:
