@@ -34,6 +34,12 @@
                         "description": "Offset",
                         "name": "offset",
                         "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "description": "Tags",
+                        "name": "tags",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -468,6 +474,12 @@
                 "status": {
                     "$ref": "#/definitions/model.JobStatus"
                 },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "type": {
                     "$ref": "#/definitions/model.JobType"
                 },
@@ -497,6 +509,12 @@
                             "$ref": "#/definitions/model.HTTPJob"
                         }
                     ]
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "type": {
                     "description": "Job type",
@@ -567,6 +585,12 @@
                 },
                 "http": {
                     "$ref": "#/definitions/model.HTTPJob"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "type": {
                     "$ref": "#/definitions/model.JobType"

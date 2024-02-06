@@ -199,10 +199,7 @@ func (j *Jobs) ListJobs() gin.HandlerFunc {
 			return
 		}
 
-		ctx.JSON(http.StatusOK, map[string]interface {
-		}{
-			"jobs": jobs,
-		})
+		ctx.JSON(http.StatusOK, jobs)
 
 	}
 }
