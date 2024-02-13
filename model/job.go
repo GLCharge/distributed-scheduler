@@ -96,6 +96,8 @@ type Job struct {
 
 	// when the job is scheduled to run next (can be null if the job is not scheduled to run again)
 	NextRun null.Time `json:"next_run"`
+
+	Tags []string `json:"tags"`
 }
 
 // swagger:model JobUpdate
@@ -106,6 +108,8 @@ type JobUpdate struct {
 
 	CronSchedule *string    `json:"cron_schedule,omitempty"`
 	ExecuteAt    *time.Time `json:"execute_at,omitempty"`
+
+	Tags *[]string `json:"tags,omitempty"`
 }
 
 func (j *Job) ApplyUpdate(update JobUpdate) {
@@ -130,6 +134,10 @@ func (j *Job) ApplyUpdate(update JobUpdate) {
 
 	if update.ExecuteAt != nil {
 		j.ExecuteAt = null.TimeFromPtr(update.ExecuteAt)
+	}
+
+	if update.Tags != nil {
+		j.Tags = *update.Tags
 	}
 
 	j.UpdatedAt = time.Now()
@@ -332,6 +340,8 @@ type JobCreate struct {
 	// HTTPJob and AMQPJob are mutually exclusive.
 	HTTPJob *HTTPJob `json:"http_job,omitempty"`
 	AMQPJob *AMQPJob `json:"amqp_job,omitempty"`
+
+	Tags []string `json:"tags"`
 }
 
 func (j *JobCreate) ToJob() *Job {
@@ -345,6 +355,7 @@ func (j *JobCreate) ToJob() *Job {
 		AMQPJob:      j.AMQPJob,
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),
+		Tags:         j.Tags,
 	}
 
 	job.SetInitialRunTime()

@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/GLCharge/distributed-scheduler/model"
-	"github.com/GLCharge/distributed-scheduler/service/job"
+	jobService "github.com/GLCharge/distributed-scheduler/service/job"
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,14 +22,14 @@ func JobsRoutesV1(router *gin.Engine, jobsHandler *Jobs) {
 	}
 }
 
-func NewJobsHandler(service *job.Service) *Jobs {
+func NewJobsHandler(service *jobService.Service) *Jobs {
 	return &Jobs{
 		service: service,
 	}
 }
 
 type Jobs struct {
-	service *job.Service
+	service *jobService.Service
 }
 
 type ErrorResponse struct {
@@ -181,6 +181,7 @@ func (j *Jobs) DeleteJob() gin.HandlerFunc {
 // @Produce json
 // @Param limit query int false "Limit"
 // @Param offset query int false "Offset"
+// @Param tags query array false "Tags"
 // @Success 200 {object} []model.Job
 // @Failure 400 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
@@ -190,16 +191,15 @@ func (j *Jobs) ListJobs() gin.HandlerFunc {
 
 		limit, offset := LimitAndOffset(ctx)
 
-		jobs, err := j.service.ListJobs(ctx.Request.Context(), limit, offset)
+		tags := ctx.QueryArray("tags")
+
+		jobs, err := j.service.ListJobs(ctx.Request.Context(), limit, offset, tags)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 			return
 		}
 
-		ctx.JSON(http.StatusOK, map[string]interface {
-		}{
-			"jobs": jobs,
-		})
+		ctx.JSON(http.StatusOK, jobs)
 
 	}
 }
